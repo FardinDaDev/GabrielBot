@@ -1,10 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
-import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
-import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import com.google.common.base.Preconditions;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
@@ -26,6 +23,24 @@ public class OptionsCommand {
             data.nsfw = !data.nsfw;
             event.getChannel().sendMessage("NSFW has been toggled for this channel").queue();
         });
+        registerOption("prefix:set", (event, args)->{
+            if(args.length == 0) {
+                event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("opts").help()).queue();
+                return;
+            }
+            String prefix = args[0];
+            String guild = event.getGuild().getId();
+
+            GabrielData.GuildData data = GabrielData.guilds().get().get(guild);
+            if(prefix.equals(GabrielData.config().prefix)) {
+                data.prefix = prefix;
+                event.getChannel().sendMessage("Removed custom prefix").queue();
+                return;
+            }
+            if(data == null) GabrielData.guilds().get().set(guild, data = new GabrielData.GuildData());
+            data.prefix = prefix;
+            event.getChannel().sendMessage("Prefix has been changed to " + GabrielData.guilds().get().get(guild).prefix).queue();
+        });
     }
 
     public static void registerOption(String name, BiConsumer<GuildMessageReceivedEvent, String[]> code) {
@@ -37,12 +52,13 @@ public class OptionsCommand {
 
     @RegisterCommand
     public static void register(CommandRegistry registry) {
-        registry.register("opts", SimpleCommand.builder()
+        registry.register("opts", SimpleCommand.builder(CommandCategory.MODERATION)
                 .permission(CommandPermission.ADMIN)
                 .description("Changes local options")
                 .help(SimpleCommand.helpEmbed("opts", CommandPermission.ADMIN,
                         "Changes local options for this guild",
-                        "`>>opts nsfw toggle`: toggles nsfw on the channel it's run"
+                        "`>>opts nsfw toggle`: toggles nsfw on the channel it's run\n" +
+                               "`>>opts prefix set <prefix>`: changes the prefix for this guild"
                 ))
                 .code((event, args)->{
                     if(args.length < 2) {
@@ -57,7 +73,7 @@ public class OptionsCommand {
                         BiConsumer<GuildMessageReceivedEvent, String[]> option = options.get(name);
                         if(option != null) {
                             String[] a;
-                            if(i+1 < args.length) a = Arrays.copyOfRange(args, i+1, args.length);
+                            if(++i < args.length) a = Arrays.copyOfRange(args, i, args.length);
                             else a = new String[0];
                             option.accept(event, a);
                             return;

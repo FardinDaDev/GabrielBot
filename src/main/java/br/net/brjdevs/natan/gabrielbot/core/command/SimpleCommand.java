@@ -9,8 +9,8 @@ import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
-@FunctionalInterface
 public interface SimpleCommand extends Command {
     @Override
     default void run(GuildMessageReceivedEvent event) {
@@ -25,15 +25,23 @@ public interface SimpleCommand extends Command {
         return StringUtils.advancedSplitArgs(parts[1], 0);
     }
 
-    static Builder builder() {
-        return new Builder();
+    static Builder builder(CommandCategory category) {
+        return new Builder(category);
     }
 
     class Builder {
+        private final CommandCategory category;
+
+        private Function<GuildMessageReceivedEvent, String[]> splitter;
         private BiConsumer<GuildMessageReceivedEvent, String[]> code;
         private String description;
         private Message help;
         private CommandPermission permission;
+        private boolean hidden = false;
+
+        public Builder(CommandCategory category) {
+            this.category = category;
+        }
 
         public Builder code(BiConsumer<GuildMessageReceivedEvent, String[]> code) {
             this.code = Preconditions.checkNotNull(code, "code");
@@ -56,6 +64,16 @@ public interface SimpleCommand extends Command {
 
         public Builder permission(CommandPermission permission) {
             this.permission = Preconditions.checkNotNull(permission);
+            return this;
+        }
+
+        public Builder splitter(Function<GuildMessageReceivedEvent, String[]> splitter) {
+            this.splitter = splitter;
+            return this;
+        }
+
+        public Builder hidden(boolean hidden) {
+            this.hidden = hidden;
             return this;
         }
 
@@ -84,6 +102,23 @@ public interface SimpleCommand extends Command {
                 @Override
                 public Message help() {
                     return help;
+                }
+
+                @Override
+                public boolean isHiddenFromHelp() {
+                    return hidden;
+                }
+
+                @Override
+                public CommandCategory category() {
+                    return category;
+                }
+
+                @Override
+                public String[] splitArgs(GuildMessageReceivedEvent event) {
+                    if(splitter == null)
+                        return SimpleCommand.super.splitArgs(event);
+                    return splitter.apply(event);
                 }
             };
         }

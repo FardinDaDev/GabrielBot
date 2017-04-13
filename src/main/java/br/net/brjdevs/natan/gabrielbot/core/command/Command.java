@@ -3,18 +3,15 @@ package br.net.brjdevs.natan.gabrielbot.core.command;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
-@FunctionalInterface
 public interface Command {
     void run(GuildMessageReceivedEvent event);
-    default CommandPermission permission() {
-        return CommandPermission.USER;
-    }
+    CommandPermission permission();
 
-    default String description() {
-        throw new UnsupportedOperationException();
-    }
+    String description();
 
-    default Message help() {
-        throw new UnsupportedOperationException();
-    }
+    Message help();
+
+    CommandCategory category();
+
+    boolean isHiddenFromHelp();
 }

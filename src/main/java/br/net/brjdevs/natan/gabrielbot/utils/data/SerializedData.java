@@ -6,6 +6,7 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -14,20 +15,21 @@ import static br.net.brjdevs.natan.gabrielbot.utils.KryoUtils.*;
 public class SerializedData<T> {
     private final Function<String, String> get;
     private final KryoPool kryoPool;
+    private final Consumer<String> remove;
     private final BiConsumer<String, String> set;
     private final Map<String, T> data = new ConcurrentHashMap<>();
 
-    public SerializedData(KryoPool kryoPool, BiConsumer<String, String> set, Function<String, String> get) {
+    public SerializedData(KryoPool kryoPool, BiConsumer<String, String> set, Function<String, String> get, Consumer<String> remove) {
         this.kryoPool = kryoPool == null ? POOL : kryoPool;
         this.set = checkNotNull(set, "set");
         this.get = checkNotNull(get, "get");
+        this.remove = checkNotNull(remove, "remove");
     }
 
     @SuppressWarnings("unchecked")
     public T get(String key) {
         String value = get.apply(key);
-        if (value == null) return null;
-        return data.computeIfAbsent(key, (k)->(T)unserialize(kryoPool, Base64.getDecoder().decode(value)));
+        return data.computeIfAbsent(key, (k)->value == null ? null : (T)unserialize(kryoPool, Base64.getDecoder().decode(value)));
     }
 
     public String getString(String key) {
@@ -40,6 +42,11 @@ public class SerializedData<T> {
 
     public void setString(String key, String value) {
         set.accept(key, value);
+    }
+
+    public void remove(String key) {
+        data.remove(key);
+        remove.accept(key);
     }
 
     public void save() {

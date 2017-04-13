@@ -31,9 +31,11 @@ public class CommandRegistry {
 
     public void process(GuildMessageReceivedEvent event) {
         String first = event.getMessage().getRawContent().split(" ")[0];
-        String p = GabrielData.config().prefix;
-        if(first.startsWith(p)) {
-            String cmdname = first.substring(p.length());
+        String prefix = GabrielData.config().prefix;
+        GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+        String guildPrefix = data == null ? null : data.prefix;
+        if(first.startsWith(prefix) || (guildPrefix != null && first.startsWith(guildPrefix))) {
+            String cmdname = first.substring(first.startsWith(prefix) ? prefix.length() : guildPrefix.length());
             Command cmd = commands.get(cmdname);
             if(cmd == null) return;
             if(!cmd.permission().test(event.getGuild(), event.getMember())) {

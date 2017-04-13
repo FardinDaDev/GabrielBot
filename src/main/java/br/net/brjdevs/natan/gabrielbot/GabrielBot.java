@@ -116,7 +116,7 @@ public class GabrielBot {
     }
 
     public Guild getGuildById(long id) {
-        return Arrays.stream(shards).map(s->s.getJDA().getGuildById(id)).filter(Objects::nonNull).findFirst().orElse(null);
+        return Arrays.stream(shards).map(s->s.getJDA().getGuildById(id)).filter(Objects::nonNull).distinct().findFirst().orElse(null);
     }
 
     public List<Guild> getGuilds() {

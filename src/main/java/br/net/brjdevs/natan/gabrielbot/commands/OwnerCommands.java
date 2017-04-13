@@ -1,10 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
-import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
-import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
@@ -55,7 +52,7 @@ public class OwnerCommands {
 
     @RegisterCommand
     public static void shutdown(CommandRegistry registry) {
-        registry.register("shutdown", SimpleCommand.builder()
+        registry.register("shutdown", SimpleCommand.builder(CommandCategory.OWNER)
                 .permission(CommandPermission.OWNER)
                 .description("Puts me to sleep")
                 .help(SimpleCommand.helpEmbed("shutdown", CommandPermission.OWNER, "Puts me to sleep", "`>>shutdown`"))
@@ -69,14 +66,17 @@ public class OwnerCommands {
 
     @RegisterCommand
     public static void eval(CommandRegistry registry) {
-        registry.register("eval", SimpleCommand.builder()
+        registry.register("eval", SimpleCommand.builder(CommandCategory.OWNER)
                 .permission(CommandPermission.OWNER)
                 .description("Evaluates code")
                 .help(SimpleCommand.helpEmbed("eval", CommandPermission.OWNER,
                         "Evaluates code",
-                        "`>>eval java <code>`: evaluates java code\n" +
-                        "`>>eval js <code>`: evaluates javascript code"
+                        "`>>eval java <code>`: evaluates java code"
                 ))
+                .splitter(event->{
+                    String[] s = event.getMessage().getRawContent().split(" ", 2);
+                    return s.length == 1 ? new String[0] : s[1].split(" ");
+                })
                 .code((event, args)->{
                     if(args.length < 2) {
                         event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("eval").help()).queue();
@@ -110,7 +110,7 @@ public class OwnerCommands {
                                     if(err.length() > 500) {
                                         err = Utils.paste(err);
                                     }
-                                    event.getChannel().sendMessage("Error compiling:\n\n" + err).queue();
+                                    event.getChannel().sendMessage("Error compiling:\n\n```\n" + err + "```").queue();
                                     return;
                                 }
                                 DummyClassLoader loader = new DummyClassLoader(OwnerCommands.class.getClassLoader());
@@ -122,6 +122,7 @@ public class OwnerCommands {
                                     try(FileInputStream fis = new FileInputStream(f)) {
                                         Utils.copyData(fis, baos);
                                     }
+                                    f.delete();
                                     String clname = f.getAbsolutePath().substring(root.getAbsolutePath().length()+1).replace('/', '.').replace('\\', '.');
 
                                     UnsafeUtils.defineClass(
@@ -157,9 +158,6 @@ public class OwnerCommands {
                                 event.getChannel().sendMessage("Error executing, check logs").queue();
                             }
                             return;
-                        case "js":
-                        case "javascript":
-                            return;
                     }
                     event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("eval").help()).queue();
                 })
@@ -169,10 +167,6 @@ public class OwnerCommands {
     public static class DummyClassLoader extends ClassLoader {
         public DummyClassLoader(ClassLoader parent) {
             super(parent);
-        }
-
-        public Class<?> define(String name, byte[] bytes) {
-            return super.defineClass(name, bytes, 0, bytes.length);
         }
     }
 }

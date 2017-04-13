@@ -1,10 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
-import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
-import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
@@ -20,7 +17,7 @@ public class CatGirlsCommand {
 
     @RegisterCommand
     public static void register(CommandRegistry registry) {
-        registry.register("catgirls", SimpleCommand.builder()
+        registry.register("catgirls", SimpleCommand.builder(CommandCategory.IMAGE)
                 .description("Sends catgirl pictures")
                 .help(SimpleCommand.helpEmbed("catgirls", CommandPermission.USER,
                         "Sends catgirl images",

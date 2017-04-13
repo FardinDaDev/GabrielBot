@@ -1,23 +1,64 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
-import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
-import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.utils.PrologBuilder;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.MessageStats;
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.JDAInfo;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.management.ManagementFactory;
-import java.util.Arrays;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RegisterCommand.Class
 public class MiscCommands {
     @RegisterCommand
+    public static void register(CommandRegistry registry) {
+        registry.register("help", SimpleCommand.builder(CommandCategory.MISC)
+                .description("Shows this screen")
+                .permission(CommandPermission.USER)
+                .help(SimpleCommand.helpEmbed("help", CommandPermission.USER,
+                        "Shows help about a command (What did you expect?!)",
+                        "`>>help`: Lists all commands\n`>>help <command>`: Shows help for the specified command"
+                ))
+                .code((event, args)->{
+                    if(args.length > 0) {
+                        Command cmd = GabrielBot.getInstance().registry.commands().get(args[0]);
+                        if(cmd == null || cmd.isHiddenFromHelp()) {
+                            event.getChannel().sendMessage("No command named " + args[0]).queue();
+                            return;
+                        }
+                        try {
+                            event.getChannel().sendMessage(cmd.help()).queue();
+                        } catch(UnsupportedOperationException e) {
+                            event.getChannel().sendMessage("No help available for this command").queue();
+                        }
+                        return;
+                    }
+                    EnumMap<CommandCategory, List<Pair<String, String>>> cmds = new EnumMap<>(CommandCategory.class);
+                    GabrielBot.getInstance().registry.commands().forEach((name, command)->{
+                        if(command.permission().test(event.getGuild(), event.getMember()) && !command.isHiddenFromHelp())
+                            cmds.computeIfAbsent(command.category(), ignored->new ArrayList<>()).add(new ImmutablePair<>(name, command.description()));
+                    });
+                    EmbedBuilder eb = new EmbedBuilder();
+                    eb.setDescription("Command help. For extended usage please use >>help <command>");
+                    cmds.forEach((category, names)->{
+                        String name = category.name().toLowerCase();
+                        name = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+                        eb.addField(name, names.stream().map(c->"`" + c.getLeft() + "`: " + c.getRight()).collect(Collectors.joining("\n")), false);
+                    });
+                    event.getChannel().sendMessage(eb.build()).queue();
+                })
+                .build());
+    }
+
+    @RegisterCommand
     public static void stats(CommandRegistry registry) {
-        registry.register("stats", SimpleCommand.builder()
+        registry.register("stats", SimpleCommand.builder(CommandCategory.INFO)
                 .permission(CommandPermission.USER)
                 .description("Shows info about me")
                 .help(SimpleCommand.helpEmbed("stats", CommandPermission.USER,
@@ -58,7 +99,7 @@ public class MiscCommands {
 
     @RegisterCommand
     public static void ping(CommandRegistry registry) {
-        registry.register("ping", SimpleCommand.builder()
+        registry.register("ping", SimpleCommand.builder(CommandCategory.INFO)
                 .permission(CommandPermission.USER)
                 .description("Shows my ping")
                 .help(SimpleCommand.helpEmbed("ping", CommandPermission.USER,
