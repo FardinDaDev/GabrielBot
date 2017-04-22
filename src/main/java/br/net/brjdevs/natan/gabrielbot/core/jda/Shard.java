@@ -25,7 +25,7 @@ public class Shard {
                 .setCorePoolSize(10)
                 .setEventManager(new EventManager(shardId))
                 .addEventListener(new MainListener())
-                .setGame(Game.of(">>help"));
+                .setGame(Game.of("Loading..."));
         if(totalShards > 1) {
             builder.useSharding(shardId, totalShards);
         }

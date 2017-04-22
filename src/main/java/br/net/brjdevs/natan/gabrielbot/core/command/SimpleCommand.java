@@ -1,15 +1,17 @@
 package br.net.brjdevs.natan.gabrielbot.core.command;
 
+import br.com.brjdevs.java.utils.functions.TriConsumer;
 import br.net.brjdevs.natan.gabrielbot.utils.StringUtils;
 import com.google.common.base.Preconditions;
 import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
 
 public interface SimpleCommand extends Command {
     @Override
@@ -25,6 +27,28 @@ public interface SimpleCommand extends Command {
         return StringUtils.advancedSplitArgs(parts[1], 0);
     }
 
+    default EmbedBuilder helpEmbed(GuildMessageReceivedEvent event, String name) {
+        String cmdname = Character.toUpperCase(name.charAt(0)) + name.substring(1) + " Command";
+        String p = permission().name().toLowerCase();
+        String perm = Character.toUpperCase(p.charAt(0)) + p.substring(1);
+        return new EmbedBuilder()
+                .setTitle(cmdname, null)
+                .setDescription("\u200B")
+                .addField("Permission required", perm, false)
+                .setFooter("Requested by " + event.getAuthor().getName(), null);
+    }
+
+    default MessageEmbed helpEmbed(GuildMessageReceivedEvent event, String name, String defaultUsage) {
+        return helpEmbed(event, name)
+                .addField("Description", description(event), false)
+                .addField("Usage", getString(event.getGuild(), "cmd_" + name.toLowerCase() + "_usage", defaultUsage), false)
+                .build();
+    }
+
+    default void onHelp(GuildMessageReceivedEvent event) {
+        event.getChannel().sendMessage(help(event)).queue();
+    }
+
     static Builder builder(CommandCategory category) {
         return new Builder(category);
     }
@@ -33,33 +57,36 @@ public interface SimpleCommand extends Command {
         private final CommandCategory category;
 
         private Function<GuildMessageReceivedEvent, String[]> splitter;
-        private BiConsumer<GuildMessageReceivedEvent, String[]> code;
-        private String description;
-        private Message help;
+        private TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]> code;
+        private BiFunction<SimpleCommand, GuildMessageReceivedEvent, MessageEmbed> help;
+        private String name;
+        private String defaultDescription;
         private CommandPermission permission;
         private boolean hidden = false;
 
         public Builder(CommandCategory category) {
             this.category = category;
+            this.permission = category.permissionRequired;
         }
 
-        public Builder code(BiConsumer<GuildMessageReceivedEvent, String[]> code) {
+        public Builder code(TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]> code) {
             this.code = Preconditions.checkNotNull(code, "code");
             return this;
         }
 
-        public Builder description(String description) {
-            this.description = Preconditions.checkNotNull(description, "description");
-            return this;
+        public Builder code(BiConsumer<GuildMessageReceivedEvent, String[]> code) {
+            Preconditions.checkNotNull(code, "code");
+            return code((ignored, event, args)->code.accept(event, args));
         }
 
-        public Builder help(Message help) {
+        public Builder help(BiFunction<SimpleCommand, GuildMessageReceivedEvent, MessageEmbed> help) {
             this.help = Preconditions.checkNotNull(help, "help");
             return this;
         }
-
-        public Builder help(MessageEmbed embed) {
-            return help(new MessageBuilder().setEmbed(Preconditions.checkNotNull(embed, "embed")).build());
+        public Builder description(String name, String defaultDescription) {
+            this.name = Preconditions.checkNotNull(name, "name");
+            this.defaultDescription = Preconditions.checkNotNull(defaultDescription, "defaultDescription");
+            return this;
         }
 
         public Builder permission(CommandPermission permission) {
@@ -80,13 +107,13 @@ public interface SimpleCommand extends Command {
         public Command build() {
             Preconditions.checkNotNull(code, "code");
             Preconditions.checkNotNull(permission, "permission");
-            Preconditions.checkNotNull(description, "description");
+            Preconditions.checkNotNull(defaultDescription, "defaultDescription");
             if(help == null)
-                help = new MessageBuilder().append("No help available for this command").build();
+                help = (ignored1, ignored2)->new EmbedBuilder().setDescription("No help available for this command").build();
             return new SimpleCommand() {
                 @Override
                 public void call(GuildMessageReceivedEvent event, String[] args) {
-                    code.accept(event, args);
+                    code.accept(this, event, args);
                 }
 
                 @Override
@@ -95,13 +122,13 @@ public interface SimpleCommand extends Command {
                 }
 
                 @Override
-                public String description() {
-                    return description;
+                public String description(GuildMessageReceivedEvent event) {
+                    return getString(event.getGuild(), "cmd_" + name + "_desc", defaultDescription);
                 }
 
                 @Override
-                public Message help() {
-                    return help;
+                public MessageEmbed help(GuildMessageReceivedEvent event) {
+                    return help.apply(this, event);
                 }
 
                 @Override
@@ -122,18 +149,5 @@ public interface SimpleCommand extends Command {
                 }
             };
         }
-    }
-
-    static MessageEmbed helpEmbed(String name, CommandPermission permission, String description, String usage) {
-        String cmdname = Character.toUpperCase(name.charAt(0)) + name.substring(1) + " Command";
-        String p = permission.name().toLowerCase();
-        String perm = Character.toUpperCase(p.charAt(0)) + p.substring(1);
-        return new EmbedBuilder()
-                .setTitle(cmdname, null)
-                .setDescription("\u200B")
-                .addField("Permission required", perm, false)
-                .addField("Description", description, false)
-                .addField("Usage", usage, false)
-                .build();
     }
 }

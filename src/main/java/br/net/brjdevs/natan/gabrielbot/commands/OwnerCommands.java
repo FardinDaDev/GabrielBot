@@ -2,6 +2,7 @@ package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import br.net.brjdevs.natan.gabrielbot.core.command.*;
+import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
@@ -51,11 +52,23 @@ public class OwnerCommands {
     }
 
     @RegisterCommand
+    public static void save(CommandRegistry cr) {
+        cr.register("save", SimpleCommand.builder(CommandCategory.OWNER)
+                .description("save", "Flushes data to db")
+                .help((thiz, event)->thiz.helpEmbed(event, "save", "`>>save`"))
+                .code((event, args)->{
+                    GabrielData.save();
+                    event.getChannel().sendMessage("Successfully saved").queue();
+                })
+                .build()
+        );
+    }
+
+    @RegisterCommand
     public static void shutdown(CommandRegistry registry) {
         registry.register("shutdown", SimpleCommand.builder(CommandCategory.OWNER)
-                .permission(CommandPermission.OWNER)
-                .description("Puts me to sleep")
-                .help(SimpleCommand.helpEmbed("shutdown", CommandPermission.OWNER, "Puts me to sleep", "`>>shutdown`"))
+                .description("shutdown", "Puts me to sleep")
+                .help((thiz, event)->thiz.helpEmbed(event, "shutdown", "`>>shutdown`"))
                 .code((event, args)->{
                     event.getChannel().sendMessage("*Goes to sleep...*").complete();
                     Arrays.stream(GabrielBot.getInstance().getShards()).forEach(s->s.getJDA().shutdown(true));
@@ -65,101 +78,134 @@ public class OwnerCommands {
     }
 
     @RegisterCommand
+    public static void blacklist(CommandRegistry registry) {
+        registry.register("blacklist", SimpleCommand.builder(CommandCategory.OWNER)
+                .description("blacklist", "Adds or removes an user/guild from the blacklist")
+                .help((thiz, event)->thiz.helpEmbed(event, "blacklist",
+                        "`>>blacklist add <id>`: Adds specified id to the blacklist\n" +
+                               "`>>blacklist remove <id>`: Removes specified id from the blacklist"
+                ))
+                .code((thiz, event, args)->{
+                    if(args.length < 2) {
+                        thiz.onHelp(event);
+                        return;
+                    }
+                    String id = args[1].replaceAll("(<@!?)?(\\d+?)(>)?", "$2");
+                    try {
+                        Long.parseLong(id);
+                    } catch(NumberFormatException e) {
+                        event.getChannel().sendMessage(id + ": Not a valid id").queue();
+                        return;
+                    }
+                    switch(args[0]) {
+                        case "add":
+                            GabrielData.blacklist().set(id, "true");
+                            event.getChannel().sendMessage("Added " + id + " to the blacklist").queue();
+                            return;
+                        case "remove":
+                            GabrielData.blacklist().remove(id);
+                            event.getChannel().sendMessage("Removed " + id + " from the blacklist").queue();
+                            return;
+                    }
+                    event.getChannel().sendMessage(thiz.help(event)).queue();
+                })
+                .build());
+    }
+
+    @RegisterCommand
     public static void eval(CommandRegistry registry) {
         registry.register("eval", SimpleCommand.builder(CommandCategory.OWNER)
-                .permission(CommandPermission.OWNER)
-                .description("Evaluates code")
-                .help(SimpleCommand.helpEmbed("eval", CommandPermission.OWNER,
-                        "Evaluates code",
-                        "`>>eval java <code>`: evaluates java code"
+                .description("eval", "Evaluates code")
+                .help((thiz, event)->thiz.helpEmbed(event, "eval",
+                        "`>>eval <code>`: evaluates java code"
                 ))
                 .splitter(event->{
                     String[] s = event.getMessage().getRawContent().split(" ", 2);
                     return s.length == 1 ? new String[0] : s[1].split(" ");
                 })
-                .code((event, args)->{
-                    if(args.length < 2) {
-                        event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("eval").help()).queue();
+                .code((thiz, event, args)->{
+                    if(args.length == 0) {
+                        event.getChannel().sendMessage(thiz.help(event)).queue();
                         return;
                     }
-                    switch(args[0]) {
-                        case "java":
-                            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-                            String input = String.join(" ", Arrays.copyOfRange(args, 1, args.length)) + ";";
-                            String code = imports +
-                                    "public class Source {\n" +
-                                        "public static Object run(GuildMessageReceivedEvent event){\n" +
-                                            "try {\n" +
-                                                "return null;\n" +
-                                            "} finally {\n" +
-                                                input.replaceAll(";{2,}", ";") + "//*/\n" +
-                                            "}\n" +
-                                        "}\n" +
-                                    "}";
-                            File root = new File(".dynamic");
-                            File source = new File(root, "dontuse/Source.java");
-                            source.getParentFile().mkdirs();
-                            try {
-                                try(FileOutputStream fos = new FileOutputStream(source)) {
-                                    Utils.copyData(new ByteArrayInputStream(code.getBytes(Charset.defaultCharset())), fos);
-                                }
-                                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                                int errcode = compiler.run(null, out, out, source.getPath());
-                                if(errcode != 0) {
-                                    String err = new String(out.toByteArray(), Charset.defaultCharset());
-                                    if(err.length() > 500) {
-                                        err = Utils.paste(err);
-                                    }
-                                    event.getChannel().sendMessage("Error compiling:\n\n```\n" + err + "```").queue();
-                                    return;
-                                }
-                                DummyClassLoader loader = new DummyClassLoader(OwnerCommands.class.getClassLoader());
-                                File[] files = new File(root, "dontuse").listFiles();
-                                if(files == null) files = new File[0];
-                                for(File f : files) {
-                                    if(!f.getName().endsWith(".class")) continue;
-                                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                    try(FileInputStream fis = new FileInputStream(f)) {
-                                        Utils.copyData(fis, baos);
-                                    }
-                                    f.delete();
-                                    String clname = f.getAbsolutePath().substring(root.getAbsolutePath().length()+1).replace('/', '.').replace('\\', '.');
-
-                                    UnsafeUtils.defineClass(
-                                            clname.substring(0, clname.length()-6),
-                                            baos.toByteArray(),
-                                            loader
-                                    );
-                                }
-                                Object ret = loader.loadClass("dontuse.Source").getMethod("run", GuildMessageReceivedEvent.class).invoke(null, event);
-                                if(ret == null) {
-                                    event.getChannel().sendMessage("Evaluated successfully with no returns").queue();
-                                    return;
-                                }
-                                String v;
-                                if(ret instanceof Object[]) v = Arrays.toString((Object[])ret);
-                                else if(ret instanceof boolean[]) v = Arrays.toString((boolean[])ret);
-                                else if(ret instanceof byte[]) v = Arrays.toString((byte[])ret);
-                                else if(ret instanceof short[]) v = Arrays.toString((short[])ret);
-                                else if(ret instanceof char[]) v = new String((char[])ret);
-                                else if(ret instanceof int[]) v = Arrays.toString((int[])ret);
-                                else if(ret instanceof float[]) v = Arrays.toString((float[])ret);
-                                else if(ret instanceof long[]) v = Arrays.toString((long[])ret);
-                                else if(ret instanceof double[]) v = Arrays.toString((double[])ret);
-                                else v = String.valueOf(ret);
-
-                                if(v.length() > 500) {
-                                    event.getChannel().sendMessage("Evaluated successfully: " + Utils.paste(v)).queue();
-                                    return;
-                                }
-                                event.getChannel().sendMessage("Evaluated successfully:\n\n```\n" + v + "```").queue();
-                            } catch(Exception e) {
-                                e.printStackTrace();
-                                event.getChannel().sendMessage("Error executing, check logs").queue();
+                    Thread thread = new Thread(()->{
+                        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+                        String input = (String.join(" ", args) + ";").replaceAll(";{2,}", ";");
+                        String code = imports +
+                                "public class Source {\n" +
+                                "public static Object run(GuildMessageReceivedEvent event) throws Throwable {\n" +
+                                "try {\n" +
+                                "return null;\n" +
+                                "} finally {\n" +
+                                input + "//*/\n" +
+                                "}\n" +
+                                "}\n" +
+                                "}";
+                        File root = new File(".dynamic");
+                        File source = new File(root, "dontuse/Source.java");
+                        source.getParentFile().mkdirs();
+                        try {
+                            try(FileOutputStream fos = new FileOutputStream(source)) {
+                                Utils.copyData(new ByteArrayInputStream(code.getBytes(Charset.defaultCharset())), fos);
                             }
-                            return;
-                    }
-                    event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("eval").help()).queue();
+                            ByteArrayOutputStream out = new ByteArrayOutputStream();
+                            int errcode = compiler.run(null, out, out, source.getPath());
+                            if(errcode != 0) {
+                                String err = new String(out.toByteArray(), Charset.defaultCharset());
+                                if(err.length() > 500) {
+                                    err = Utils.paste(err);
+                                }
+                                event.getChannel().sendMessage("Error compiling:\n\n```\n" + err + "```").queue();
+                                return;
+                            }
+                            DummyClassLoader loader = new DummyClassLoader(OwnerCommands.class.getClassLoader());
+                            File[] files = new File(root, "dontuse").listFiles();
+                            if(files == null) files = new File[0];
+                            for(File f : files) {
+                                if(!f.getName().endsWith(".class")) continue;
+                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                try(FileInputStream fis = new FileInputStream(f)) {
+                                    Utils.copyData(fis, baos);
+                                }
+                                f.delete();
+                                String clname = f.getAbsolutePath().substring(root.getAbsolutePath().length()+1).replace('/', '.').replace('\\', '.');
+
+                                UnsafeUtils.defineClass(
+                                        clname.substring(0, clname.length()-6),
+                                        baos.toByteArray(),
+                                        loader
+                                );
+                            }
+                            Object ret = loader.loadClass("dontuse.Source").getMethod("run", GuildMessageReceivedEvent.class).invoke(null, event);
+                            if(ret == null) {
+                                event.getChannel().sendMessage("Evaluated successfully with no returns").queue();
+                                return;
+                            }
+                            String v;
+                            if(ret instanceof Object[]) v = Arrays.toString((Object[])ret);
+                            else if(ret instanceof boolean[]) v = Arrays.toString((boolean[])ret);
+                            else if(ret instanceof byte[]) v = Arrays.toString((byte[])ret);
+                            else if(ret instanceof short[]) v = Arrays.toString((short[])ret);
+                            else if(ret instanceof char[]) v = new String((char[])ret);
+                            else if(ret instanceof int[]) v = Arrays.toString((int[])ret);
+                            else if(ret instanceof float[]) v = Arrays.toString((float[])ret);
+                            else if(ret instanceof long[]) v = Arrays.toString((long[])ret);
+                            else if(ret instanceof double[]) v = Arrays.toString((double[])ret);
+                            else v = String.valueOf(ret);
+
+                            if(v.length() > 500) {
+                                event.getChannel().sendMessage("Evaluated successfully: " + Utils.paste(v)).queue();
+                                return;
+                            }
+                            event.getChannel().sendMessage("Evaluated successfully:\n\n```\n" + v + "```").queue();
+                        } catch(Exception e) {
+                            e.printStackTrace();
+                            event.getChannel().sendMessage("Error executing, check logs").queue();
+                        }
+                    }, "EvalThread");
+                    thread.setPriority(Thread.MAX_PRIORITY);
+                    thread.setDaemon(true);
+                    thread.start();
                 })
                 .build());
     }

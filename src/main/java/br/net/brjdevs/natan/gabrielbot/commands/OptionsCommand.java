@@ -1,6 +1,6 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
-import br.net.brjdevs.natan.gabrielbot.GabrielBot;
+import br.com.brjdevs.java.utils.functions.TriConsumer;
 import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import com.google.common.base.Preconditions;
@@ -13,7 +13,7 @@ import java.util.function.BiConsumer;
 
 @RegisterCommand.Class
 public class OptionsCommand {
-    private static final Map<String, BiConsumer<GuildMessageReceivedEvent, String[]>> options = new HashMap<>();
+    private static final Map<String, TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]>> options = new HashMap<>();
 
     static {
         registerOption("nsfw:toggle", (event, args)->{
@@ -21,11 +21,11 @@ public class OptionsCommand {
             GabrielData.ChannelData data = GabrielData.channels().get().get(channel);
             if(data == null) GabrielData.channels().get().set(channel, data = new GabrielData.ChannelData());
             data.nsfw = !data.nsfw;
-            event.getChannel().sendMessage("NSFW has been toggled for this channel").queue();
+            event.getChannel().sendMessage("NSFW has been " + (data.nsfw ? "enabled" : "disabled") + " for this channel").queue();
         });
-        registerOption("prefix:set", (event, args)->{
+        registerOption("prefix:set", (thiz, event, args)->{
             if(args.length == 0) {
-                event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("opts").help()).queue();
+                event.getChannel().sendMessage(thiz.help(event)).queue();
                 return;
             }
             String prefix = args[0];
@@ -43,26 +43,30 @@ public class OptionsCommand {
         });
     }
 
-    public static void registerOption(String name, BiConsumer<GuildMessageReceivedEvent, String[]> code) {
+    public static void registerOption(String name, TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]> code) {
         Preconditions.checkNotNull(name, "name");
         Preconditions.checkArgument(!name.isEmpty(), "Name is empty");
         Preconditions.checkNotNull(code, "code");
         options.putIfAbsent(name, code);
     }
 
+    public static void registerOption(String name, BiConsumer<GuildMessageReceivedEvent, String[]> code) {
+        Preconditions.checkNotNull(code, "code");
+        registerOption(name, (ignored, event, args)->code.accept(event, args));
+    }
+
     @RegisterCommand
     public static void register(CommandRegistry registry) {
         registry.register("opts", SimpleCommand.builder(CommandCategory.MODERATION)
                 .permission(CommandPermission.ADMIN)
-                .description("Changes local options")
-                .help(SimpleCommand.helpEmbed("opts", CommandPermission.ADMIN,
-                        "Changes local options for this guild",
+                .description("opts", "Changes local options")
+                .help((thiz, event)->thiz.helpEmbed(event, "opts",
                         "`>>opts nsfw toggle`: toggles nsfw on the channel it's run\n" +
                                "`>>opts prefix set <prefix>`: changes the prefix for this guild"
                 ))
-                .code((event, args)->{
+                .code((thiz, event, args)->{
                     if(args.length < 2) {
-                        event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("opts").help()).queue();
+                        thiz.onHelp(event);
                         return;
                     }
                     String name = "";
@@ -70,16 +74,16 @@ public class OptionsCommand {
                         String s = args[i];
                         if(!name.isEmpty()) name += ":";
                         name += s;
-                        BiConsumer<GuildMessageReceivedEvent, String[]> option = options.get(name);
+                        TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]> option = options.get(name);
                         if(option != null) {
                             String[] a;
                             if(++i < args.length) a = Arrays.copyOfRange(args, i, args.length);
                             else a = new String[0];
-                            option.accept(event, a);
+                            option.accept(thiz, event, a);
                             return;
                         }
                     }
-                    event.getChannel().sendMessage(GabrielBot.getInstance().registry.commands().get("opts").help()).queue();
+                    event.getChannel().sendMessage(thiz.help(event)).queue();
                 })
                 .build());
     }

@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoPool;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,7 +12,11 @@ import java.io.ByteArrayOutputStream;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class KryoUtils {
-    public static final KryoPool POOL = new KryoPool.Builder(Kryo::new).build();
+    public static final KryoPool POOL = new KryoPool.Builder(()->{
+        Kryo kryo = new Kryo();
+        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+        return kryo;
+    }).build();
 
     public static <T> T copy(T t) {
         if (t == null) return null;

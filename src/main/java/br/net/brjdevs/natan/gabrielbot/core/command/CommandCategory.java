@@ -4,6 +4,7 @@ public enum CommandCategory {
     MISC(CommandPermission.USER),
     INFO(CommandPermission.USER),
     IMAGE(CommandPermission.USER),
+    FUN(CommandPermission.USER),
     MODERATION(CommandPermission.ADMIN),
     OWNER(CommandPermission.OWNER);
 

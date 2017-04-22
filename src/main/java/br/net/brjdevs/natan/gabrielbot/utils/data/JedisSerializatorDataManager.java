@@ -1,62 +1,37 @@
 package br.net.brjdevs.natan.gabrielbot.utils.data;
 
-import com.google.common.base.Preconditions;
+import com.esotericsoftware.kryo.pool.KryoPool;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeUnit;
 
-public class JedisSerializatorDataManager<T> implements DataManager<SerializedData<T>> {
-    private static Map<String, JedisPool> pools = new ConcurrentHashMap<>();
+public class JedisSerializatorDataManager<T> extends JedisDataManager implements DataManager<SerializedData<T>> {
+    private SerializedData<T> data;
 
-    private final JedisPool pool;
-    private final SerializedData<T> data;
-
-    public JedisSerializatorDataManager(JedisPool pool, String prefix) {
-        this.pool = Preconditions.checkNotNull(pool, "pool");
-        data = new SerializedData<>(null, (key, value)->{
-            try(Jedis j = pool.getResource()) {
-                j.set(prefix + key, value);
-            }
-        }, (key)->{
-            try(Jedis j = pool.getResource()) {
-                return j.get(prefix + key);
-            }
-        }, (key)->{
-            try(Jedis j = pool.getResource()) {
-                j.del(prefix + key);
-            }
-        });
+    public JedisSerializatorDataManager(JedisPool pool, String prefix, KryoPool kryo, int cacheSize, int expireAfter, TimeUnit unit) {
+        super(pool, prefix);
+        data = new SerializedData<>(kryo, cacheSize, expireAfter, unit, this::set, this::get, this::remove);
     }
 
-    public JedisSerializatorDataManager(String host, int port, String prefix) {
-        this(pools.computeIfAbsent(host + port, k->new JedisPool(host, port)), prefix);
+    public JedisSerializatorDataManager(String host, int port, String prefix, KryoPool kryo, int cacheSize, int expireAfter, TimeUnit unit) {
+        super(host, port, prefix);
+        data = new SerializedData<>(kryo, cacheSize, expireAfter, unit, this::set, this::get, this::remove);
     }
 
-    public JedisSerializatorDataManager(String host, int port) {
-        this(host, port, "");
-    }
-
-    public JedisPool getPool() {
-        return pool;
+    public JedisSerializatorDataManager(String host, int port, KryoPool kryo, int cacheSize, int expireAfter, TimeUnit unit) {
+        super(host, port, "");
+        data = new SerializedData<>(kryo, cacheSize, expireAfter, unit, this::set, this::get, this::remove);
     }
 
     @Override
     public void save() {
         data.save();
-        run(Jedis::bgsave);
+        run(Jedis::save);
     }
 
     @Override
     public SerializedData<T> get() {
         return data;
-    }
-
-    public void run(Consumer<Jedis> consumer) {
-        try(Jedis j = pool.getResource()) {
-            consumer.accept(j);
-        }
     }
 }

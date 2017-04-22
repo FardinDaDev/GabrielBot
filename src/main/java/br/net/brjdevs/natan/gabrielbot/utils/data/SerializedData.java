@@ -1,10 +1,11 @@
 package br.net.brjdevs.natan.gabrielbot.utils.data;
 
 import com.esotericsoftware.kryo.pool.KryoPool;
+import com.github.benmanes.caffeine.cache.*;
 
 import java.util.Base64;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -17,19 +18,36 @@ public class SerializedData<T> {
     private final KryoPool kryoPool;
     private final Consumer<String> remove;
     private final BiConsumer<String, String> set;
-    private final Map<String, T> data = new ConcurrentHashMap<>();
+    private final LoadingCache<String, Optional<T>> data;
 
-    public SerializedData(KryoPool kryoPool, BiConsumer<String, String> set, Function<String, String> get, Consumer<String> remove) {
+    @SuppressWarnings("unchecked")
+    public SerializedData(KryoPool kryoPool, int cacheSize, int expireTime, TimeUnit expireUnit, BiConsumer<String, String> set, Function<String, String> get, Consumer<String> remove) {
         this.kryoPool = kryoPool == null ? POOL : kryoPool;
         this.set = checkNotNull(set, "set");
         this.get = checkNotNull(get, "get");
         this.remove = checkNotNull(remove, "remove");
+        this.data = Caffeine.newBuilder()
+                .maximumSize(cacheSize)
+                .initialCapacity(Math.min(cacheSize/10, 1))
+                .expireAfterAccess(expireTime, expireUnit)
+                .removalListener((key, value, cause)->{
+                    switch(cause) {
+                        case REPLACED:
+                        case EXPLICIT:
+                        case COLLECTED:
+                            return;
+                    }
+                    set.accept((String)key, Base64.getEncoder().encodeToString(serialize(kryoPool, value)));
+                })
+                .build((key)->{
+                    String value = get.apply(key);
+                    if(value == null) return Optional.empty();
+                    return Optional.of((T)unserialize(kryoPool, Base64.getDecoder().decode(value)));
+                });
     }
 
-    @SuppressWarnings("unchecked")
     public T get(String key) {
-        String value = get.apply(key);
-        return data.computeIfAbsent(key, (k)->value == null ? null : (T)unserialize(kryoPool, Base64.getDecoder().decode(value)));
+        return data.get(key).orElse(null);
     }
 
     public String getString(String key) {
@@ -37,7 +55,7 @@ public class SerializedData<T> {
     }
 
     public void set(String key, T object) {
-        data.put(key, object);
+        data.put(key, Optional.of(object));
     }
 
     public void setString(String key, String value) {
@@ -45,13 +63,13 @@ public class SerializedData<T> {
     }
 
     public void remove(String key) {
-        data.remove(key);
+        data.invalidate(key);
         remove.accept(key);
     }
 
     public void save() {
-        data.forEach((key, value)->{
-            set.accept(key, Base64.getEncoder().encodeToString(serialize(kryoPool, value)));
+        data.asMap().forEach((key, value)->{
+            value.ifPresent(v->set.accept(key, Base64.getEncoder().encodeToString(serialize(kryoPool, v))));
         });
     }
 }

@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    compile 'net.dv8tion:JDA:3.0.0_175'
+    compile 'net.dv8tion:JDA:3.0.0_183'
 
     compile 'com.sedmelluq:lavaplayer:1.2.36'
     compile 'com.sedmelluq:jda-nas:1.0.3'
@@ -28,10 +28,19 @@ dependencies {
     compile 'br.com.brjdevs:network:1.0.0_2'
     compile 'net.bytebuddy:byte-buddy:1.6.9'
 
-    compile 'com.google.guava:guava:19.0'
+    compile 'com.google.guava:guava:21.0'
 
     compile 'redis.clients:jedis:2.9.0'
     compile 'com.esotericsoftware:kryo:4.0.0'
+
+    compile 'com.github.ben-manes.caffeine:caffeine:2.4.0'
+}
+
+shadowJar {
+    baseName = 'gabrielbot'
+    classifier = null
+    version = null
+    configurations = [project.configurations.compile]
 }
 
 compileJava.options.encoding = 'UTF-8'

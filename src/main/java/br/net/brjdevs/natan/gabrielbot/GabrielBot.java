@@ -6,7 +6,6 @@ import br.net.brjdevs.natan.gabrielbot.core.data.Config;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.core.jda.Shard;
 import br.net.brjdevs.natan.gabrielbot.log.DiscordLogBack;
-import com.google.common.base.Preconditions;
 import com.mashape.unirest.http.Unirest;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.TextChannel;
@@ -18,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -35,19 +35,44 @@ public class GabrielBot {
     private final Shard[] shards;
 
     private GabrielBot() throws Throwable {
+        GabrielData.blacklist().run((j)->{
+            LOGGER.info("Successfully established connection to database");
+        }, (t)->{
+            LOGGER.warn("Unable to connect to the database");
+            LOGGER.info("Attempting to start database...");
+            File dbstart = new File("dbstart.bat");
+            if(!dbstart.isFile()) dbstart = new File("dbstart.sh");
+            if(!dbstart.isFile()) {
+                LOGGER.error("No dbstart.sh/dbstart.bat found, exiting");
+                System.exit(-1);
+            }
+            try {
+                Runtime.getRuntime().exec(dbstart.getAbsolutePath()).waitFor();
+                Thread.sleep(5000);
+                GabrielData.blacklist().run((j)->{
+                    LOGGER.info("Successfully established connection to database");
+                }, (e)->{
+                    LOGGER.error("DB not started, exiting", e);
+                    System.exit(-1);
+                });
+            } catch(IOException|InterruptedException e) {
+                LOGGER.error("Error running dbstart file", e);
+                System.exit(-1);
+            }
+        });
+
         Reflections r = new Reflections("br.net.brjdevs.natan.gabrielbot.commands");
 
         registry = new CommandRegistry();
+        long l = System.nanoTime();
         for(Class<?> cls : r.getTypesAnnotatedWith(RegisterCommand.Class.class)) {
+            Object instance = null;
             for(Method m : cls.getMethods()) {
                 if(m.getAnnotation(RegisterCommand.class) == null) continue;
-                Class<?>[] params = m.getParameterTypes();
-                Preconditions.checkArgument(params.length == 1 && params[0] == CommandRegistry.class, "Invalid method: " + m.toGenericString());
                 if(Modifier.isStatic(m.getModifiers())) {
                     m.invoke(null, registry);
                 } else {
-                    Object instance;
-                    try {
+                    if(instance == null) try {
                         instance = m.getDeclaringClass().newInstance();
                     } catch(Exception e) {
                         LOGGER.error("Error instantiating a command class", e);
@@ -57,24 +82,24 @@ public class GabrielBot {
                 }
             }
         }
+        long ll = System.nanoTime()-l;
+        LOGGER.info("Registered {} commands in {} ns ({} ms)", registry.commands().size(), ll, ll/1_000_000);
 
-        {
-            Thread t = new Thread(()->{
-                while(true) {
-                    GabrielData.save();
-                    try {
-                        Thread.sleep(3_600_000);
-                    } catch(InterruptedException e) {
-                        e.printStackTrace();
-                        return;
-                    }
+        Thread t = new Thread(()->{
+            while(true) {
+                try {
+                    Thread.sleep(3_600_000);
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                    return;
                 }
-            }, "DataSaverThread");
-            t.setDaemon(true);
-            t.start();
+                GabrielData.save();
+            }
+        }, "DataSaverThread");
+        t.setDaemon(true);
+        t.start();
 
-            Runtime.getRuntime().addShutdownHook(new Thread(GabrielData::save, "ShutdownHookSaverThread"));
-        }
+        Runtime.getRuntime().addShutdownHook(new Thread(GabrielData::save, "ShutdownHookSaverThread"));
 
         Config config = GabrielData.config();
 
@@ -84,6 +109,7 @@ public class GabrielBot {
             shards[i] = new Shard(config.token, i, shards.length, config.nas);
         }
         DiscordLogBack.enable();
+        LOGGER.info("Loading done!");
     }
 
 
@@ -124,9 +150,9 @@ public class GabrielBot {
     }
 
     public void log(String s) {
-        TextChannel tc = getTextChannelById(GabrielData.config().consoleChannel);
+        System.out.println(s);
+        TextChannel tc = getTextChannelById(GabrielData.config().console);
         if(tc == null) {
-            System.out.println(s); //already formatted
             return;
         }
         tc.sendMessage(s).queue();
@@ -138,7 +164,6 @@ public class GabrielBot {
             @Override
             public void onLog(SimpleLog log, SimpleLog.Level logLevel, Object message) {
                 Logger l = LoggerFactory.getLogger(log.name);
-                String s = String.valueOf(message);
                 switch(logLevel) {
                     case TRACE:
                         if (l.isTraceEnabled()) {
