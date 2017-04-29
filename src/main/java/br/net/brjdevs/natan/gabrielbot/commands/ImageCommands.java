@@ -35,10 +35,12 @@ public class ImageCommands {
                     try {
                         boolean nsfw = args.length > 0 && args[0].equalsIgnoreCase("nsfw");
                         if(nsfw) {
-                            GabrielData.ChannelData data = GabrielData.channels().get().get(event.getChannel().getId());
-                            if(data == null || !data.nsfw) {
-                                event.getChannel().sendMessage(getString(event.getGuild(), NOT_NSFW, "Not in a NSFW channel")).queue();
-                                return;
+                            if(!event.getChannel().isNSFW())  {
+                                GabrielData.ChannelData data = GabrielData.channels().get().get(event.getChannel().getId());
+                                if(data == null || !data.nsfw) {
+                                    event.getChannel().sendMessage(getString(event.getGuild(), NOT_NSFW, "Not in a NSFW channel")).queue();
+                                    return;
+                                }
                             }
                         }
                         JSONObject obj = Unirest.get(nsfw ? NSFWURL : BASEURL)
