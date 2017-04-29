@@ -32,8 +32,15 @@ before_script:
 build:
   stage: build
   script:
-    - ./gradlew -g /cache/.gradle clean assemble
+    - ./gradlew shadowJar
   allow_failure: false
+  artifacts:
+    paths:
+      - build/libs/*.jar
+    expire_in: 1 week
+  only:
+    - master
+  
 
 # Use the generated build output to run the tests.
 test:
