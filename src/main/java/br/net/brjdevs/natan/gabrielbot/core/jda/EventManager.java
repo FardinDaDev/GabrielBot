@@ -1,11 +1,11 @@
 package br.net.brjdevs.natan.gabrielbot.core.jda;
 
 import br.com.brjdevs.highhacks.eventbus.ASMEventBus;
+import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import net.dv8tion.jda.core.events.Event;
 import net.dv8tion.jda.core.hooks.IEventManager;
-import net.dv8tion.jda.core.hooks.InterfacedEventManager;
 
 import java.util.Collections;
 import java.util.List;
@@ -51,6 +51,7 @@ public class EventManager implements IEventManager {
 
     @Override
     public void handle(Event event) {
+        if(!GabrielBot.isLoaded()) return;
         executor.submit(()->handleSync(event));
     }
 

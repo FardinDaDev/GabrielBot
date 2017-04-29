@@ -6,6 +6,8 @@ import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import net.dv8tion.jda.core.EmbedBuilder;
 
 import java.util.Arrays;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
@@ -29,9 +31,10 @@ public class CustomCommand {
                         return;
                     }
                     GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+                    GabrielData.GuildCommandData commandData = GabrielData.guildCommands().get().get(event.getGuild().getId());
 
                     if(args[0].equals("ls") || args[0].equals("list")) {
-                        if(data == null || data.customCommands.isEmpty()) {
+                        if(commandData == null || commandData.custom.isEmpty()) {
                             event.getChannel().sendMessage(
                                     getString(event.getGuild(), CustomCommands.NO_COMMANDS, "This guild has no custom commands")
                             ).queue();
@@ -39,7 +42,7 @@ public class CustomCommand {
                         }
                         event.getChannel().sendMessage(new EmbedBuilder()
                                 .setDescription(
-                                        data.customCommands.keySet().stream().map(name->'`' + name + '`').collect(Collectors.joining(", "))
+                                        commandData.custom.stream().map(name->'`' + name + '`').collect(Collectors.joining(", "))
                                 )
                                 .build()
                         ).queue();
@@ -60,6 +63,9 @@ public class CustomCommand {
                             if(data == null) {
                                 GabrielData.guilds().get().set(event.getGuild().getId(), data = new GabrielData.GuildData());
                             }
+                            if(commandData == null) {
+                                GabrielData.guildCommands().get().set(event.getGuild().getId(), commandData = new GabrielData.GuildCommandData());
+                            }
                             String name = args[1];
                             if(GabrielBot.getInstance().registry.commands().containsKey(name)) {
                                 event.getChannel().sendMessage(
@@ -67,7 +73,8 @@ public class CustomCommand {
                                 ).queue();
                                 return;
                             }
-                            String s = data.customCommands.putIfAbsent(name, String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
+                            br.net.brjdevs.natan.gabrielbot.commands.custom.CustomCommand s = data.customCommands.putIfAbsent(name, br.net.brjdevs.natan.gabrielbot.commands.custom.CustomCommand.of(String.join(" ", Arrays.copyOfRange(args, 2, args.length))));
+                            commandData.custom.add(name);
                             if(s == null) {
                                 event.getChannel().sendMessage(
                                         getString(event.getGuild(), CustomCommands.ADDED_SUCCESSFULLY, "Added successfully")
@@ -79,12 +86,13 @@ public class CustomCommand {
                             }
                             break;
                         case "remove":
-                            if(data == null) {
+                            if(commandData == null) {
                                 event.getChannel().sendMessage(
                                         getString(event.getGuild(), CustomCommands.NO_COMMANDS, "This guild has no custom commands")
                                 ).queue();
                                 return;
                             }
+                            commandData.custom.remove(args[1]);
                             if(data.customCommands.remove(args[1]) != null) {
                                 event.getChannel().sendMessage(
                                         getString(event.getGuild(), CustomCommands.REMOVED_SUCCESSFULLY, "Removed successfully")
@@ -102,14 +110,14 @@ public class CustomCommand {
                                 ).queue();
                                 return;
                             }
-                            String raw = data.customCommands.get(args[1]);
+                            br.net.brjdevs.natan.gabrielbot.commands.custom.CustomCommand raw = data.customCommands.get(args[1]);
                             if(raw == null) {
                                 event.getChannel().sendMessage(
                                         getString(event.getGuild(), CustomCommands.COMMAND_NOT_FOUND, "Command not found")
                                 ).queue();
                             } else {
                                 event.getChannel().sendMessage(new EmbedBuilder()
-                                        .setDescription(raw)
+                                        .setDescription(raw.getRaw())
                                         .build()
                                 ).queue();
                             }
@@ -125,7 +133,7 @@ public class CustomCommand {
                                 ).queue();
                                 return;
                             }
-                            String cmd = data.customCommands.remove(args[1]);
+                            br.net.brjdevs.natan.gabrielbot.commands.custom.CustomCommand cmd = data.customCommands.remove(args[1]);
                             if(cmd == null) {
                                 event.getChannel().sendMessage(
                                         getString(event.getGuild(), CustomCommands.COMMAND_NOT_FOUND, "Command not found")
@@ -133,12 +141,15 @@ public class CustomCommand {
                                 return;
                             }
                             if(data.customCommands.get(args[2]) != null) {
+                                data.customCommands.put(args[1], cmd);
                                 event.getChannel().sendMessage(
                                         getString(event.getGuild(), CustomCommands.NAME_CONFLICT, "There is already a custom command with the new name")
                                 ).queue();
                                 return;
                             }
                             data.customCommands.put(args[2], cmd);
+                            commandData.custom.remove(args[1]);
+                            commandData.custom.add(args[2]);
                             event.getChannel().sendMessage(
                                     getString(event.getGuild(), CustomCommands.RENAME_SUCCESS, "Renamed successfully")
                             ).queue();

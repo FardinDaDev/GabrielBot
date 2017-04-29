@@ -31,15 +31,15 @@ public class OptionsCommand {
             String prefix = args[0];
             String guild = event.getGuild().getId();
 
-            GabrielData.GuildData data = GabrielData.guilds().get().get(guild);
+            GabrielData.GuildCommandData data = GabrielData.guildCommands().get().get(guild);
             if(prefix.equals(GabrielData.config().prefix)) {
                 data.prefix = prefix;
                 event.getChannel().sendMessage("Removed custom prefix").queue();
                 return;
             }
-            if(data == null) GabrielData.guilds().get().set(guild, data = new GabrielData.GuildData());
+            if(data == null) GabrielData.guildCommands().get().set(guild, data = new GabrielData.GuildCommandData());
             data.prefix = prefix;
-            event.getChannel().sendMessage("Prefix has been changed to " + GabrielData.guilds().get().get(guild).prefix).queue();
+            event.getChannel().sendMessage("Prefix has been changed to " + GabrielData.guildCommands().get().get(guild).prefix).queue();
         });
     }
 

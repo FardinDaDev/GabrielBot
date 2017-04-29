@@ -6,7 +6,11 @@ import br.net.brjdevs.natan.gabrielbot.core.data.Config;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.core.jda.Shard;
 import br.net.brjdevs.natan.gabrielbot.log.DiscordLogBack;
+import br.net.brjdevs.natan.gabrielbot.music.GuildMusicPlayer;
 import com.mashape.unirest.http.Unirest;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
@@ -30,8 +34,10 @@ public class GabrielBot {
     public static final Logger LOGGER = LoggerFactory.getLogger(GabrielBot.class);
 
     private static GabrielBot instance;
+    private static boolean loaded = false;
 
     public final CommandRegistry registry;
+    public final AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
     private final Shard[] shards;
 
     private GabrielBot() throws Throwable {
@@ -60,6 +66,8 @@ public class GabrielBot {
                 System.exit(-1);
             }
         });
+
+        AudioSourceManagers.registerRemoteSources(playerManager);
 
         Reflections r = new Reflections("br.net.brjdevs.natan.gabrielbot.commands");
 
@@ -110,11 +118,31 @@ public class GabrielBot {
         }
         DiscordLogBack.enable();
         LOGGER.info("Loading done!");
+        loaded = true;
     }
 
+    public static boolean isLoaded() {
+        return loaded;
+    }
 
     public Shard[] getShards() {
         return shards.clone();
+    }
+
+    public GuildMusicPlayer getPlayer(long guildId) {
+        return shards[calculateShardId(guildId)].getPlayer(guildId);
+    }
+
+    public GuildMusicPlayer createPlayer(long guildId, long textChannelId, long voiceChannelId) {
+        return shards[calculateShardId(guildId)].createPlayer(guildId, textChannelId, voiceChannelId);
+    }
+
+    public GuildMusicPlayer removePlayer(long guildId) {
+        return shards[calculateShardId(guildId)].removePlayer(guildId);
+    }
+
+    public int calculateShardId(long guildId) {
+        return (int) ((guildId >> 22) % shards.length);
     }
 
     public User getUserById(long id) {
@@ -142,7 +170,7 @@ public class GabrielBot {
     }
 
     public Guild getGuildById(long id) {
-        return Arrays.stream(shards).map(s->s.getJDA().getGuildById(id)).filter(Objects::nonNull).distinct().findFirst().orElse(null);
+        return shards[calculateShardId(id)].getJDA().getGuildById(id);
     }
 
     public List<Guild> getGuilds() {

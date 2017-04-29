@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 
 public class Utils {
     private static final Logger LOGGER = LoggerFactory.getLogger("Utils");
@@ -35,5 +36,13 @@ public class Utils {
         byte[] buffer = new byte[1024];
         int read;
         while((read = from.read(buffer)) != -1) to.write(buffer, 0, read);
+    }
+
+    public static String getDurationMinutes(long length) {
+        return String.format("%d:%02d minutes",
+                TimeUnit.MILLISECONDS.toMinutes(length),
+                TimeUnit.MILLISECONDS.toSeconds(length) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(length))
+        );
     }
 }

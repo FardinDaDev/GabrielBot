@@ -1,6 +1,8 @@
 package br.net.brjdevs.natan.gabrielbot.core.command;
 
+import br.net.brjdevs.natan.gabrielbot.commands.custom.CustomCommand;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
+import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import br.net.brjdevs.natan.gabrielbot.utils.data.JedisDataManager;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.MessageStats;
 import com.google.common.base.Preconditions;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 public class CommandRegistry implements BiConsumer<String, Command> {
@@ -42,7 +45,7 @@ public class CommandRegistry implements BiConsumer<String, Command> {
         if(blacklist.get(guildid) != null || blacklist.get(authorid) != null) return;
         String first = event.getMessage().getRawContent().split(" ")[0];
         String prefix = GabrielData.config().prefix;
-        GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+        GabrielData.GuildCommandData data = GabrielData.guildCommands().get().get(event.getGuild().getId());
         String guildPrefix = data == null ? null : data.prefix;
         if(first.startsWith(prefix) || (guildPrefix != null && first.startsWith(guildPrefix))) {
             String cmdname = first.substring(first.startsWith(prefix) ? prefix.length() : guildPrefix.length());
@@ -66,10 +69,25 @@ public class CommandRegistry implements BiConsumer<String, Command> {
     }
 
     public void handleCustom(GuildMessageReceivedEvent event, String cmdname) {
-        GabrielData.GuildData gd = GabrielData.guilds().get().get(event.getGuild().getId());
-        if(gd == null || gd.customCommands == null || gd.customCommands.isEmpty()) return;
-        String custom = gd.customCommands.get(cmdname);
-        event.getChannel().sendMessage(custom).queue();
+        GabrielData.GuildCommandData data = GabrielData.guildCommands().get().get(event.getGuild().getId());
+        if(data == null || data.custom.isEmpty() || !data.custom.contains(cmdname)) return;
+        CustomCommand custom = GabrielData.guilds().get().get(event.getGuild().getId()).customCommands.get(cmdname);
+        String rawInput = event.getMessage().getRawContent();
+
+        String processed = custom.process(rawInput.substring(rawInput.indexOf(cmdname)+cmdname.length()),
+                "user", event.getAuthor().getName(),
+                "discrim", event.getAuthor().getDiscriminator(),
+                "mention", event.getAuthor().getAsMention(),
+                "channel", event.getChannel().getName(),
+                "userid", event.getAuthor().getId(),
+                "channelid", event.getChannel().getId(),
+                "guild", event.getGuild().getName(),
+                "guildid", event.getGuild().getId()
+        );
+        if(processed.length() > 1990) {
+            processed = "Done! " + Utils.paste(processed);
+        }
+        event.getChannel().sendMessage(processed).queue();
     }
 
     public Map<String, Command> commands() {

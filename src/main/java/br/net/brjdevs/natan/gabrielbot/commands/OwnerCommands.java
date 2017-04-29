@@ -41,8 +41,10 @@ public class OwnerCommands {
         addImport("br.net.brjdevs.natan.gabrielbot.core.jda.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.listeners.*");
         addImport("br.net.brjdevs.natan.gabrielbot.log.*");
+        addImport("br.net.brjdevs.natan.gabrielbot.music.*");
         addImport("br.net.brjdevs.natan.gabrielbot.utils.*");
         addImport("br.net.brjdevs.natan.gabrielbot.utils.data.*");
+        addImport("br.net.brjdevs.natan.gabrielbot.utils.cache.*");
 
         addImport("br.com.brjdevs.highhacks.eventbus.*");
     }

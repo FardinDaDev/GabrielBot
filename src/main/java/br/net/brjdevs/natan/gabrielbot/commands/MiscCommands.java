@@ -6,6 +6,7 @@ import br.net.brjdevs.natan.gabrielbot.utils.PrologBuilder;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.AsyncInfoMonitor;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.MessageStats;
 import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDAInfo;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,8 +25,8 @@ public class MiscCommands {
     }
 
     @RegisterCommand
-    public static void register(CommandRegistry registry) {
-        registry.register("help", SimpleCommand.builder(CommandCategory.MISC)
+    public static void help(CommandRegistry cr) {
+        cr.register("help", SimpleCommand.builder(CommandCategory.MISC)
                 .description("help", "Shows this screen")
                 .help((thiz, event)->thiz.helpEmbed(event, "help",
                         "`>>help`: Lists all commands\n`>>help <command>`: Shows help for the specified command"
@@ -70,6 +71,16 @@ public class MiscCommands {
                         "`>>stats`"
                 ))
                 .code((event, args)->{
+                    int connectedShards, totalShards;
+                    {
+                        int[] i = new int[2];
+                        Arrays.stream(GabrielBot.getInstance().getShards()).forEach(shard->{
+                            i[0]++;
+                            if(shard.getJDA().getStatus() == JDA.Status.CONNECTED) i[1]++;
+                        });
+                        totalShards = i[0];
+                        connectedShards = i[1];
+                    }
                     PrologBuilder pb = new PrologBuilder();
                     pb.addLabel("Info")
                             .addField("Uptime", formatUptime(ManagementFactory.getRuntimeMXBean().getUptime()))
@@ -85,7 +96,8 @@ public class MiscCommands {
                             .addField("Text Channels", GabrielBot.getInstance().getTextChannels().size())
                             .addField("Voice Channels", GabrielBot.getInstance().getVoiceChannels().size())
                             .addField("Received Messages", MessageStats.getMessages())
-                            .addField("Executed Commands", MessageStats.getCommands());
+                            .addField("Executed Commands", MessageStats.getCommands())
+                            .addField("Shards (C/T)", connectedShards + "/" + totalShards);
                     event.getChannel().sendMessage(pb.build()).queue();
                 })
                 .build());
@@ -113,7 +125,7 @@ public class MiscCommands {
                     long now = System.currentTimeMillis();
                     event.getChannel().sendTyping().queue(done->{
                         long apiPing = System.currentTimeMillis() - now;
-                        event.getChannel().sendMessage(String.format("API Ping: %d\nWS Ping: %d", apiPing, event.getJDA().getPing())).queue();
+                        event.getChannel().sendMessage(String.format("API Ping: %d ms\nWS Ping: %d ms", apiPing, event.getJDA().getPing())).queue();
                     });
                 })
                 .build());

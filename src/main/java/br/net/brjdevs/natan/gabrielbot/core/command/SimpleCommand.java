@@ -9,6 +9,7 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
@@ -77,6 +78,11 @@ public interface SimpleCommand extends Command {
         public Builder code(BiConsumer<GuildMessageReceivedEvent, String[]> code) {
             Preconditions.checkNotNull(code, "code");
             return code((ignored, event, args)->code.accept(event, args));
+        }
+
+        public Builder code(Consumer<GuildMessageReceivedEvent> code) {
+            Preconditions.checkNotNull(code, "code");
+            return code((ignored, event, args)->code.accept(event));
         }
 
         public Builder help(BiFunction<SimpleCommand, GuildMessageReceivedEvent, MessageEmbed> help) {

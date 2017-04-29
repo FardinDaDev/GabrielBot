@@ -17,6 +17,32 @@ public class LocalizationManager {
         private CustomCommands(){}
     }
 
+    public static class Music {
+        public static final String
+            SONG_SELECTION = "music_song_select",
+            SONG_SELECTION_TIMEOUT = "music_song_select_timeout",
+            NO_MATCHES = "music_no_matches",
+            UNABLE_TO_LOAD_COMMON = "music_unable_to_load_common",
+            UNABLE_TO_LOAD_REPORTED = "music_unable_to_load_reported",
+            DIFFERENT_VC = "music_different_vc",
+            NOT_CONNECTED = "music_not_connected",
+            NOT_PLAYING = "music_not_playing",
+            SKIPPING = "music_skipping",
+            VOTE_REMOVED = "music_vote_removed",
+            VOTE_ADDED = "music_vote_added",
+            DJ_SKIP = "music_dj_skip",
+            DJ_STOP = "music_dj_stop",
+            NOT_DJ = "music_not_dj",
+            TRACK_STUCK = "music_track_stuck",
+            UNABLE_TO_PLAY_COMMON = "music_unable_to_play_common",
+            UNABLE_TO_PLAY_REPORTED = "music_unable_to_play_reported",
+            NOW_PLAYING = "music_now_playing",
+            FINISHED_PLAYING = "music_finished_playing",
+            NP = "music_np";
+
+        private Music(){}
+    }
+
     public static final String
         IMAGE_NOT_FOUND = "imgnotfound",
         NOT_NSFW = "notnsfw",
