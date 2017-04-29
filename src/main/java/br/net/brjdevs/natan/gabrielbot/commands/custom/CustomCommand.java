@@ -1,9 +1,6 @@
 package br.net.brjdevs.natan.gabrielbot.commands.custom;
 
-import br.net.brjdevs.natan.gabrielbot.commands.custom.functions.MathFunction;
-import br.net.brjdevs.natan.gabrielbot.commands.custom.functions.RandomFunction;
-import br.net.brjdevs.natan.gabrielbot.commands.custom.functions.RangeFunction;
-import br.net.brjdevs.natan.gabrielbot.commands.custom.functions.URLFunction;
+import br.net.brjdevs.natan.gabrielbot.commands.custom.functions.*;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -25,6 +22,7 @@ public class CustomCommand {
         registerDefault("random", new RandomFunction());
         registerDefault("range", new RangeFunction());
         registerDefault("url", new URLFunction());
+        registerDefault("replace", new ReplaceFunction());
     }
 
     public static void registerDefault(String name, Function function) {
@@ -57,34 +55,30 @@ public class CustomCommand {
             ret = ret.replace("%" + vars[i] + "%", vars[i+1]);
         }
 
-        String[] inputSplitted;
         if(input != null) {
             ret = ret.replace("%input%", input);
-            inputSplitted = input.split(" ");
-        } else {
-            inputSplitted = new String[0];
+            String[] inputSplitted = input.split("\\s+");
+            for(int i = 0; i < inputSplitted.length; i++) {
+                ret = ret.replace("%input" + (i+1) + "%", inputSplitted[i]);
+            }
         }
 
         Matcher funcMatcher = funcCallPattern.matcher(ret);
         while(funcMatcher.find()) {
             String group = funcMatcher.group();
             String stripped = group.substring(1);
-            String[] args = splitArgs(stripped.substring(stripped.indexOf('(')+1, stripped.indexOf(')')));
+            String[] args = splitArgs(advancedSplit, stripped.substring(stripped.indexOf('(')+1, stripped.indexOf(')')));
             for(int i = 0; i < args.length; i++) {
                 args[i] = args[i].trim();
             }
             String name = stripped.substring(0, stripped.indexOf('('));
 
-            if(name.equals("select")) {
-                ret = ret.replace(group, select(args, inputSplitted));
-            } else {
-                Function f = defaults.get(name);
-                if(f == null) {
-                    f = functions.get(name);
-                    if(f == null) continue;
-                }
-                ret = ret.replace(group, f.apply(args));
+            Function f = defaults.get(name);
+            if(f == null) {
+                f = functions.get(name);
+                if(f == null) continue;
             }
+            ret = ret.replace(group, f.apply(args));
         }
 
         Matcher ifElseMatcher = ifElsePattern.matcher(ret);
@@ -137,7 +131,7 @@ public class CustomCommand {
         return ret;
     }
 
-    private String[] splitArgs(String s) {
+    private static String[] splitArgs(boolean advancedSplit, String s) {
         if(!advancedSplit) return s.split(",\\s*");
         List<String> parts = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -240,6 +234,6 @@ public class CustomCommand {
         }
 
         cmd = cmd.trim();
-        return new CustomCommand(cmd, Collections.unmodifiableMap(funcs), advancedSplit);
+        return new CustomCommand(cmd, funcs, advancedSplit);
     }
 }

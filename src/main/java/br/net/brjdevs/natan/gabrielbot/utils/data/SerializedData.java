@@ -37,7 +37,7 @@ public class SerializedData<T> {
                         case COLLECTED:
                             return;
                     }
-                    Optional<T> optional = (Optional)value;
+                    Optional optional = (Optional)value;
                     if(!optional.isPresent()) return;
                     set.accept((String)key, Base64.getEncoder().encodeToString(serialize(kryoPool, optional.get())));
                 })

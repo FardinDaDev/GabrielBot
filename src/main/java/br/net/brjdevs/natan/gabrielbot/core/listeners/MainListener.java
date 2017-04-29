@@ -2,12 +2,13 @@ package br.net.brjdevs.natan.gabrielbot.core.listeners;
 
 import br.com.brjdevs.highhacks.eventbus.Listener;
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
+import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.MessageStats;
 import net.dv8tion.jda.core.Permission;
-import net.dv8tion.jda.core.entities.ChannelType;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.Event;
+import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.core.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.EventListener;
@@ -34,6 +35,17 @@ public class MainListener implements EventListener {
         } else if(event instanceof MessageReceivedEvent) {
             if(((MessageReceivedEvent) event).isFromType(ChannelType.TEXT)) MessageStats.message();
             else ((MessageReceivedEvent) event).getChannel().sendMessage("Only works at guilds").queue();
+        } else if(event instanceof GuildJoinEvent) {
+            Guild g = ((GuildJoinEvent)event).getGuild();
+            User u = g.getOwner().getUser();
+            GabrielBot.getInstance().log("Joined guild " + String.format("%s (%s), owned by %s#%s", g.getName(), g.getId(), u.getName(), u.getDiscriminator()));
+        } else if(event instanceof GuildLeaveEvent) {
+            Guild g = ((GuildLeaveEvent)event).getGuild();
+            GabrielBot.getInstance().log("Left guild " + String.format("%s (%s)", g.getName(), g.getId()));
+            GabrielBot.getInstance().removePlayer(g.getIdLong());
+            g.getTextChannels().forEach(tc-> GabrielData.channels().get().remove(tc.getId()));
+            GabrielData.guilds().get().remove(g.getId());
+            GabrielData.guildCommands().get().remove(g.getId());
         }
     }
 }

@@ -5,6 +5,7 @@ import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
 import br.net.brjdevs.natan.gabrielbot.core.data.Config;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.core.jda.Shard;
+import br.net.brjdevs.natan.gabrielbot.log.DebugPrintStream;
 import br.net.brjdevs.natan.gabrielbot.log.DiscordLogBack;
 import br.net.brjdevs.natan.gabrielbot.music.GuildMusicPlayer;
 import com.mashape.unirest.http.Unirest;
@@ -187,6 +188,10 @@ public class GabrielBot {
     }
 
     public static void main(String... args) throws Throwable {
+        if(DEBUG) {
+            System.setOut(new DebugPrintStream(System.out));
+            System.setErr(new DebugPrintStream(System.err));
+        }
         SimpleLog.LEVEL = SimpleLog.Level.OFF;
         SimpleLog.addListener(new SimpleLog.LogListener() {
             @Override

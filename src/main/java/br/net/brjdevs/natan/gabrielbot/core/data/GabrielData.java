@@ -11,6 +11,7 @@ import br.net.brjdevs.natan.gabrielbot.utils.data.JedisSerializatorDataManager;
 import br.net.brjdevs.natan.gabrielbot.utils.data.SerializedData;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.pool.KryoPool;
+import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.io.File;
@@ -31,7 +32,9 @@ public final class GabrielData {
     @SuppressWarnings("unchecked")
     private static final KryoPool POOL = new KryoPool.Builder(()->{
         Kryo k = new Kryo();
-        k.setInstantiatorStrategy(new StdInstantiatorStrategy());
+        Kryo.DefaultInstantiatorStrategy strategy = new Kryo.DefaultInstantiatorStrategy();
+        strategy.setFallbackInstantiatorStrategy(new StdInstantiatorStrategy());
+        k.setInstantiatorStrategy(strategy);
         k.addDefaultSerializer(GuildData.class, GUILD_SERIALIZER);
         k.addDefaultSerializer(ChannelData.class, CHANNEL_SERIALIZER);
         k.addDefaultSerializer(UserData.class, USER_SERIALIZER);

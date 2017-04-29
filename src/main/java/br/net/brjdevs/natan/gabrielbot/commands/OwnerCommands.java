@@ -3,6 +3,7 @@ package br.net.brjdevs.natan.gabrielbot.commands;
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
+import br.net.brjdevs.natan.gabrielbot.utils.DumpUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
@@ -67,8 +68,8 @@ public class OwnerCommands {
     }
 
     @RegisterCommand
-    public static void shutdown(CommandRegistry registry) {
-        registry.register("shutdown", SimpleCommand.builder(CommandCategory.OWNER)
+    public static void shutdown(CommandRegistry cr) {
+        cr.register("shutdown", SimpleCommand.builder(CommandCategory.OWNER)
                 .description("shutdown", "Puts me to sleep")
                 .help((thiz, event)->thiz.helpEmbed(event, "shutdown", "`>>shutdown`"))
                 .code((event, args)->{
@@ -80,8 +81,49 @@ public class OwnerCommands {
     }
 
     @RegisterCommand
-    public static void blacklist(CommandRegistry registry) {
-        registry.register("blacklist", SimpleCommand.builder(CommandCategory.OWNER)
+    public static void dump(CommandRegistry cr) {
+        cr.register("dump", SimpleCommand.builder(CommandCategory.OWNER)
+                .description("dump", "Dumpb threads or heap to a file")
+                .help((thiz, event)->thiz.helpEmbed(event, "dump",
+                        "`>>dump heap <file>`: Dumps the heap to the given file\n" +
+                                "`>>dump threads <file>`: Dumps the threads to the given file"
+                ))
+                .code((thiz, event, args)->{
+                    if(args.length < 2) {
+                        thiz.onHelp(event);
+                        return;
+                    }
+                    File file = new File(args[1]);
+                    //file.getParentFile().mkdirs();
+                    switch(args[0]) {
+                        case "heap":
+                            try {
+                                DumpUtils.dumpHeap(args[1]);
+                                event.getChannel().sendMessage("Dumped heap to " + file.getAbsolutePath()).queue();
+                            } catch(RuntimeException e) {
+                                GabrielBot.LOGGER.error("Error dumping heap", e);
+                                event.getChannel().sendMessage("Error dumping heap: " + e).queue();
+                            }
+                            break;
+                        case "threads":
+                            try {
+                                DumpUtils.dumpThreads(args[1]);
+                                event.getChannel().sendMessage("Dumped heap to " + file.getAbsolutePath()).queue();
+                            } catch(IOException e) {
+                                GabrielBot.LOGGER.error("Error dumping heap", e);
+                                event.getChannel().sendMessage("Error dumping heap: " + e).queue();
+                            }
+                            break;
+                        default:
+
+                    }
+                })
+                .build());
+    }
+
+    @RegisterCommand
+    public static void blacklist(CommandRegistry cr) {
+        cr.register("blacklist", SimpleCommand.builder(CommandCategory.OWNER)
                 .description("blacklist", "Adds or removes an user/guild from the blacklist")
                 .help((thiz, event)->thiz.helpEmbed(event, "blacklist",
                         "`>>blacklist add <id>`: Adds specified id to the blacklist\n" +
@@ -115,8 +157,8 @@ public class OwnerCommands {
     }
 
     @RegisterCommand
-    public static void eval(CommandRegistry registry) {
-        registry.register("eval", SimpleCommand.builder(CommandCategory.OWNER)
+    public static void eval(CommandRegistry cr) {
+        cr.register("eval", SimpleCommand.builder(CommandCategory.OWNER)
                 .description("eval", "Evaluates code")
                 .help((thiz, event)->thiz.helpEmbed(event, "eval",
                         "`>>eval <code>`: evaluates java code"
@@ -212,8 +254,8 @@ public class OwnerCommands {
                 .build());
     }
 
-    public static class DummyClassLoader extends ClassLoader {
-        public DummyClassLoader(ClassLoader parent) {
+    private static class DummyClassLoader extends ClassLoader {
+        DummyClassLoader(ClassLoader parent) {
             super(parent);
         }
     }
