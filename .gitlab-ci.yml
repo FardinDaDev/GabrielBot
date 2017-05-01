@@ -32,11 +32,20 @@ before_script:
 build:
   stage: build
   script:
-    - ./gradlew -g /cache/.gradle clean assemble
+    - ./gradlew shadowJar
+  artifacts:
+    paths:
+      - build/libs/*.jar
+    expire_in: 1 week
+  only:
+    - master
   allow_failure: false
 
 # Use the generated build output to run the tests.
-test:
-  stage: test
-  script:
-    - ./gradlew -g /cache/.gradle check
+#test:
+#  stage: test
+#  script:
+#    - ./gradlew -g /cache/.gradle check
+
+after_script:
+  - echo "End CI"
