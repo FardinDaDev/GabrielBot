@@ -74,7 +74,7 @@ public class CommandRegistry implements BiConsumer<String, Command> {
         CustomCommand custom = GabrielData.guilds().get().get(event.getGuild().getId()).customCommands.get(cmdname);
         String rawInput = event.getMessage().getRawContent();
 
-        String processed = custom.process(rawInput.substring(rawInput.indexOf(cmdname)+cmdname.length()+1),
+        String processed = custom.process(rawInput.substring(rawInput.indexOf(cmdname)+cmdname.length()),
                 "user", event.getAuthor().getName(),
                 "discrim", event.getAuthor().getDiscriminator(),
                 "mention", event.getAuthor().getAsMention(),

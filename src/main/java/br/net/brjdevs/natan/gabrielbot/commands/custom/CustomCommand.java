@@ -23,6 +23,8 @@ public class CustomCommand {
         registerDefault("range", new RangeFunction());
         registerDefault("url", new URLFunction());
         registerDefault("replace", new ReplaceFunction());
+        registerDefault("brainfuck", new BrainfuckFunction());
+        registerDefault("joke", new JokeFunction());
     }
 
     public static void registerDefault(String name, Function function) {

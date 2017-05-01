@@ -3,6 +3,7 @@ package br.net.brjdevs.natan.gabrielbot.commands;
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
+import br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager;
 import net.dv8tion.jda.core.EmbedBuilder;
 
 import java.util.Arrays;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
 
 @RegisterCommand.Class
-public class CustomCommand {
+public class CustomCommands {
     @RegisterCommand
     public static void register(CommandRegistry cr) {
         cr.register("custom", SimpleCommand.builder(CommandCategory.MISC)
@@ -36,7 +37,7 @@ public class CustomCommand {
                     if(args[0].equals("ls") || args[0].equals("list")) {
                         if(commandData == null || commandData.custom.isEmpty()) {
                             event.getChannel().sendMessage(
-                                    getString(event.getGuild(), CustomCommands.NO_COMMANDS, "This guild has no custom commands")
+                                    getString(event.getGuild(), LocalizationManager.CustomCommands.NO_COMMANDS, "This guild has no custom commands")
                             ).queue();
                             return;
                         }
@@ -69,7 +70,7 @@ public class CustomCommand {
                             String name = args[1];
                             if(GabrielBot.getInstance().registry.commands().containsKey(name)) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.NAME_CONFLICT_DEFAULT, "A regular command with that name already exists")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.NAME_CONFLICT_DEFAULT, "A regular command with that name already exists")
                                 ).queue();
                                 return;
                             }
@@ -77,43 +78,43 @@ public class CustomCommand {
                             commandData.custom.add(name);
                             if(s == null) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.ADDED_SUCCESSFULLY, "Added successfully")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.ADDED_SUCCESSFULLY, "Added successfully")
                                 ).queue();
                             } else {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.COMMAND_EXISTS, "A command with that name already exists")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.COMMAND_EXISTS, "A command with that name already exists")
                                 ).queue();
                             }
                             break;
                         case "remove":
                             if(commandData == null) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.NO_COMMANDS, "This guild has no custom commands")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.NO_COMMANDS, "This guild has no custom commands")
                                 ).queue();
                                 return;
                             }
                             commandData.custom.remove(args[1]);
                             if(data.customCommands.remove(args[1]) != null) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.REMOVED_SUCCESSFULLY, "Removed successfully")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.REMOVED_SUCCESSFULLY, "Removed successfully")
                                 ).queue();
                             } else {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.COMMAND_NOT_FOUND, "Command not found")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.COMMAND_NOT_FOUND, "Command not found")
                                 ).queue();
                             }
                             break;
                         case "raw":
                             if(data == null) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.NO_COMMANDS, "This guild has no custom commands")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.NO_COMMANDS, "This guild has no custom commands")
                                 ).queue();
                                 return;
                             }
                             br.net.brjdevs.natan.gabrielbot.commands.custom.CustomCommand raw = data.customCommands.get(args[1]);
                             if(raw == null) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.COMMAND_NOT_FOUND, "Command not found")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.COMMAND_NOT_FOUND, "Command not found")
                                 ).queue();
                             } else {
                                 event.getChannel().sendMessage(new EmbedBuilder()
@@ -129,21 +130,21 @@ public class CustomCommand {
                             }
                             if(data == null) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.NO_COMMANDS, "This guild has no custom commands")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.NO_COMMANDS, "This guild has no custom commands")
                                 ).queue();
                                 return;
                             }
                             br.net.brjdevs.natan.gabrielbot.commands.custom.CustomCommand cmd = data.customCommands.remove(args[1]);
                             if(cmd == null) {
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.COMMAND_NOT_FOUND, "Command not found")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.COMMAND_NOT_FOUND, "Command not found")
                                 ).queue();
                                 return;
                             }
                             if(data.customCommands.get(args[2]) != null) {
                                 data.customCommands.put(args[1], cmd);
                                 event.getChannel().sendMessage(
-                                        getString(event.getGuild(), CustomCommands.NAME_CONFLICT, "There is already a custom command with the new name")
+                                        getString(event.getGuild(), LocalizationManager.CustomCommands.NAME_CONFLICT, "There is already a custom command with the new name")
                                 ).queue();
                                 return;
                             }
@@ -151,7 +152,7 @@ public class CustomCommand {
                             commandData.custom.remove(args[1]);
                             commandData.custom.add(args[2]);
                             event.getChannel().sendMessage(
-                                    getString(event.getGuild(), CustomCommands.RENAME_SUCCESS, "Renamed successfully")
+                                    getString(event.getGuild(), LocalizationManager.CustomCommands.RENAME_SUCCESS, "Renamed successfully")
                             ).queue();
                             break;
                         default:

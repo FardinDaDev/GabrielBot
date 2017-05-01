@@ -38,6 +38,8 @@ public class OwnerCommands {
         addImport("br.net.brjdevs.natan.gabrielbot.*");
         addImport("br.net.brjdevs.natan.gabrielbot.commands.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.command.*");
+        addImport("br.net.brjdevs.natan.gabrielbot.core.command.custom.*");
+        addImport("br.net.brjdevs.natan.gabrielbot.core.command.custom.functions.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.data.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.jda.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.listeners.*");

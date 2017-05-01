@@ -43,6 +43,16 @@ public class LocalizationManager {
         private Music(){}
     }
 
+    public static class Fun {
+        public static final String
+            BRAINFUCK_CYCLE_LIMIT = "brainfuck_cycle_limit",
+            BRAINFUCK_DATA_POINTER_OUT_OF_BOUNDS = "brainfuck_dp_oob",
+            BRAINFUCK_INPUT_OUT_OF_BOUNDS = "brainfuck_input_oob",
+            BRAINFUCK_NO_RETURNS = "brainfuck_no_returns";
+
+        private Fun(){}
+    }
+
     public static final String
         IMAGE_NOT_FOUND = "imgnotfound",
         NOT_NSFW = "notnsfw",
