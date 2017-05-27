@@ -13,13 +13,15 @@ sourceCompatibility = 1.8
 
 repositories {
     jcenter()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    compile 'net.dv8tion:JDA:3.0.0_188'
+    //compile 'com.github.DV8FromTheWorld:JDA:c92078d'
+    compile 'net.dv8tion:JDA:3.1.0_206'
 
-    compile 'com.sedmelluq:lavaplayer:1.2.36'
-    compile 'com.sedmelluq:jda-nas:1.0.3'
+    compile 'com.sedmelluq:lavaplayer:1.2.39'
+    compile 'com.sedmelluq:jda-nas:1.0.5'
 
     compile 'org.reflections:reflections:0.9.10'
     compile 'ch.qos.logback:logback-classic:0.9.26'
@@ -33,6 +35,10 @@ dependencies {
     compile 'com.esotericsoftware:kryo:4.0.0'
 
     compile 'com.github.ben-manes.caffeine:caffeine:2.4.0'
+
+    compile 'net.jodah:expiringmap:0.5.8'
+
+    compile 'com.sparkjava:spark-core:2.6.0'
 }
 
 shadowJar {

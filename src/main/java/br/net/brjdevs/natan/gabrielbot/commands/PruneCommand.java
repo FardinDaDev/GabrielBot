@@ -9,14 +9,12 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
-
 @RegisterCommand.Class
 public class PruneCommand {
     @RegisterCommand
     public static void register(CommandRegistry cr) {
         cr.register("prune", SimpleCommand.builder(CommandCategory.MODERATION)
-                .description("prune", "Prunes messages")
+                .description("Prunes messages")
                 .help((thiz, event)->thiz.helpEmbed(event, "prune",
                         "`>>prune <x>`: prunes last x messages\n" +
                                "`>>prune <x> bot`: prunes last x messages sent by bots\n" +
@@ -27,15 +25,11 @@ public class PruneCommand {
                 ))
                 .code((thiz, event, args)->{
                     if(!PermissionUtil.checkPermission(event.getChannel(), event.getGuild().getSelfMember(), Permission.MESSAGE_MANAGE)) {
-                        event.getChannel().sendMessage(
-                                getString(event.getGuild(), MISSING_PERMISSION, "I need the $perm$ permission").replace("$perm$", "Manage Messages")
-                        ).queue();
+                        event.getChannel().sendMessage("I need the Manage Messages permission").queue();
                         return;
                     }
                     if(!PermissionUtil.checkPermission(event.getChannel(), event.getGuild().getSelfMember(), Permission.MESSAGE_HISTORY)) {
-                        event.getChannel().sendMessage(
-                                getString(event.getGuild(), MISSING_PERMISSION, "I need the $perm$ permission").replace("$perm$", "Message History")
-                        ).queue();
+                        event.getChannel().sendMessage("I need the Read Message History permission").queue();
                         return;
                     }
                     if(args.length == 0) {
@@ -98,9 +92,7 @@ public class PruneCommand {
                         }
                         messages -= 100;
                     }
-                    event.getChannel().sendMessage(
-                            getString(event.getGuild(), PRUNE_SUCCESS, "Successfully deleted $msg$ messages").replace("$msg$", String.valueOf(deleted))
-                    ).queue();
+                    event.getChannel().sendMessage("Successfully deleted " + deleted + " messages").queue();
                 })
                 .build());
     }

@@ -1,99 +1,107 @@
 package br.net.brjdevs.natan.gabrielbot.core.listeners.interactive;
 
-import br.net.brjdevs.natan.gabrielbot.utils.Expirator;
-import net.dv8tion.jda.core.entities.TextChannel;
+import br.com.brjdevs.highhacks.eventbus.Listener;
+import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.events.Event;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.EventListener;
+import net.jodah.expiringmap.ExpiringMap;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.OptionalInt;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class InteractiveOperations {
-    public static class Listener implements EventListener {
-        @br.com.brjdevs.highhacks.eventbus.Listener
-        @Override
-        public void onEvent(Event e) {
-            if(!(e instanceof GuildMessageReceivedEvent)) return;
-            GuildMessageReceivedEvent event = (GuildMessageReceivedEvent)e;
-            String id = event.getChannel().getId();
+    private static final EventListener LISTENER = new InteractiveListener();
 
-            RunningOperation operation = OPERATIONS.get(id);
+    private static final ExpiringMap<Long, Operation> OPERATIONS = ExpiringMap.<Long, Operation>builder()
+            .asyncExpirationListener((key, value) -> ((Operation)value).operation.onExpire())
+            .variableExpiration()
+            .build();
 
-            if (operation != null) {
-                if (operation.getOperation().run(event)) {
-                    EXPIRATOR.unletExpire(getCurrentOperation(event.getChannel()));
-                    OPERATIONS.remove(id);
-                } else {
-                    operation.getIncreasingTimeout().ifPresent(value -> EXPIRATOR.updateExpire(System.currentTimeMillis() + value, operation));
-                }
-            }
-        }
+    public static Future<Void> get(MessageChannel channel) {
+        return get(channel.getIdLong());
     }
 
-    private static class RunningOperation implements Expirator.Expirable {
-        private final OptionalInt increasingTimeout;
-        private final InteractiveOperation operation;
-        private final String operationName;
-
-        RunningOperation(OptionalInt increasingTimeout, InteractiveOperation operation, String operationName) {
-            this.increasingTimeout = increasingTimeout;
-            this.operation = operation;
-            this.operationName = operationName;
-        }
-
-        public OptionalInt getIncreasingTimeout() {
-            return increasingTimeout;
-        }
-
-        public InteractiveOperation getOperation() {
-            return operation;
-        }
-
-        @Override
-        public void onExpire() {
-            try {
-                operation.onExpire();
-            } catch (Throwable ignored) {
-            }
-            OPERATIONS.values().remove(this);
-        }
+    public static Future<Void> get(long channelId) {
+        Operation o = OPERATIONS.get(channelId);
+        return o == null ? null : o.future;
     }
 
-    private static final Expirator<RunningOperation> EXPIRATOR = new Expirator<>();
-    private static final Map<String, RunningOperation> OPERATIONS = new ConcurrentHashMap<>();
-    private static final EventListener LISTENER = new Listener();
-
-    public static boolean create(String channelId, String operationName, int startingTimeout, OptionalInt increasingTimeout, InteractiveOperation operation) {
-        Objects.requireNonNull(channelId, "channelId");
-        Objects.requireNonNull(increasingTimeout, "increasingTimeout");
-        Objects.requireNonNull(operation, "operation");
-
-        RunningOperation op = new RunningOperation(increasingTimeout, operation, operationName);
-
-        if (OPERATIONS.containsKey(channelId)) return false;
-
-        OPERATIONS.put(channelId, op);
-        EXPIRATOR.letExpire(System.currentTimeMillis() + startingTimeout, op);
-        return true;
+    public static Future<Void> createOrGet(MessageChannel channel, long timeoutSeconds, InteractiveOperation operation) {
+        return createOrGet(channel.getIdLong(), timeoutSeconds, operation);
     }
 
-    public static boolean create(TextChannel channel, String operationName, int startingTimeout, OptionalInt increasingTimeout, InteractiveOperation operation) {
-        Objects.requireNonNull(channel, "channel");
-        return create(channel.getId(), operationName, startingTimeout, increasingTimeout, operation);
+    public static Future<Void> createOrGet(long channelId, long timeoutSeconds, InteractiveOperation operation) {
+        if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
+        if(operation == null) throw new NullPointerException("operation");
+        Operation o = OPERATIONS.get(channelId);
+        if(o != null) return o.future;
+        o = new Operation(operation, new OperationFuture(channelId));
+        OPERATIONS.put(channelId, o, timeoutSeconds, TimeUnit.SECONDS);
+        return o.future;
     }
 
-    public static RunningOperation getCurrentOperation(String channelId) {
-        return OPERATIONS.get(channelId);
+    public static Future<Void> create(MessageChannel channel, long timeoutSeconds, InteractiveOperation operation) {
+        return create(channel.getIdLong(), timeoutSeconds, operation);
     }
 
-    public static RunningOperation getCurrentOperation(TextChannel channel) {
-        return getCurrentOperation(channel.getId());
+    public static Future<Void> create(long channelId, long timeoutSeconds, InteractiveOperation operation) {
+        if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
+        if(operation == null) throw new NullPointerException("operation");
+        Operation o = OPERATIONS.get(channelId);
+        if(o != null) return null;
+        o = new Operation(operation, new OperationFuture(channelId));
+        OPERATIONS.put(channelId, o, timeoutSeconds, TimeUnit.SECONDS);
+        return o.future;
     }
 
     public static EventListener listener() {
         return LISTENER;
+    }
+
+    public static class InteractiveListener implements EventListener {
+        @Override
+        @Listener
+        public void onEvent(Event e) {
+            if(!(e instanceof GuildMessageReceivedEvent)) return;
+            GuildMessageReceivedEvent event = (GuildMessageReceivedEvent)e;
+            if(event.getAuthor().equals(event.getJDA().getSelfUser())) return;
+            long channelId = event.getChannel().getIdLong();
+            Operation o = OPERATIONS.get(channelId);
+            if(o == null) return;
+            if(o.operation.run(event)) {
+                OPERATIONS.remove(channelId);
+                o.future.complete(null);
+            } else {
+                OPERATIONS.resetExpiration(channelId);
+            }
+        }
+    }
+
+    private static class Operation {
+        final InteractiveOperation operation;
+        final OperationFuture future;
+
+        Operation(InteractiveOperation operation, OperationFuture future) {
+            this.operation = operation;
+            this.future = future;
+        }
+    }
+
+    private static class OperationFuture extends CompletableFuture<Void> {
+        private final long id;
+
+        OperationFuture(long id) {
+            this.id = id;
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            Operation o = OPERATIONS.remove(id);
+            if(o == null) return false;
+            o.operation.onCancel();
+            return true;
+        }
     }
 }

@@ -1,18 +1,29 @@
 package br.net.brjdevs.natan.gabrielbot.utils;
 
 import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.InteractiveOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.ReactionOperations;
+import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.Permission;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageEmbed;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 public class DiscordUtils {
     public static <T> Pair<String, Integer> embedList(List<T> list, Function<T, String> toString) {
@@ -29,7 +40,7 @@ public class DiscordUtils {
     }
 
     public static boolean selectInt(GuildMessageReceivedEvent event, int max, IntConsumer valueConsumer) {
-        return InteractiveOperations.create(event.getChannel(), "Selection", 10000, OptionalInt.empty(), (e) -> {
+        return InteractiveOperations.create(event.getChannel(), 10, (e) -> {
             if (!e.getAuthor().equals(event.getAuthor())) return false;
 
             try {
@@ -40,7 +51,7 @@ public class DiscordUtils {
             } catch (Exception ignored) {
             }
             return false;
-        });
+        }) != null;
     }
 
     public static <T> boolean selectList(GuildMessageReceivedEvent event, List<T> list, Function<T, String> toString, Function<String, MessageEmbed> toEmbed, Consumer<T> valueConsumer) {
@@ -80,5 +91,138 @@ public class DiscordUtils {
         } catch (InterruptedException | ExecutionException ignored) {
             return null;
         }
+    }
+
+    public static Future<Void> list(GuildMessageReceivedEvent event, int timeoutSeconds, boolean canEveryoneUse, List<MessageEmbed> embeds) {
+        return list(event, timeoutSeconds, canEveryoneUse, embeds, i->{});
+    }
+
+    public static Future<Void> list(GuildMessageReceivedEvent event, int timeoutSeconds, boolean canEveryoneUse, List<MessageEmbed> embeds, IntConsumer beforePageSent) {
+        if(embeds.size() == 0) return null;
+        AtomicInteger index = new AtomicInteger();
+        Message m = event.getChannel().sendMessage(embeds.get(0)).complete();
+        return ReactionOperations.create(m, timeoutSeconds, (e)->{
+            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+            switch(e.getReactionEmote().getName()) {
+                case "\u2b05": //left arrow
+                    if(index.get() == 0) break;
+                    m.editMessage(embeds.get(index.decrementAndGet())).queue();
+                    break;
+                case "\u27a1": //right arrow
+                    if(index.get() + 1 >= embeds.size()) break;
+                    m.editMessage(embeds.get(index.incrementAndGet())).queue();
+                    break;
+            }
+            if(event.getGuild().getSelfMember().hasPermission(e.getTextChannel(), Permission.MESSAGE_MANAGE)) {
+                e.getReaction().removeReaction(e.getUser()).queue();
+            }
+            return false;
+        }, "\u2b05", "\u27a1");
+    }
+
+    public static Future<Void> list(GuildMessageReceivedEvent event, int timeoutSeconds, boolean canEveryoneUse, IntIntObjectFunction<EmbedBuilder> supplier, String... parts) {
+        if(parts.length == 0) return null;
+        List<MessageEmbed> embeds = new ArrayList<>();
+        AtomicInteger index = new AtomicInteger();
+        StringBuilder sb = new StringBuilder();
+        int total; {
+            int t = 0;
+            int c = 0;
+            for(String s : parts) {
+                if(s.length() + c > MessageEmbed.TEXT_MAX_LENGTH) {
+                    t++;
+                    c = 0;
+                }
+                c += s.length();
+            }
+            if(c > 0) t++;
+            total = t;
+        }
+        for(String s : parts) {
+            int l = s.length()+1;
+            if(l > MessageEmbed.TEXT_MAX_LENGTH) throw new IllegalArgumentException("Length for one of the pages is greater than the maximum");
+            if(sb.length() + l > MessageEmbed.TEXT_MAX_LENGTH) {
+                EmbedBuilder eb = supplier.apply(embeds.size()+1, total);
+                eb.setDescription(sb.toString());
+                embeds.add(eb.build());
+                sb = new StringBuilder();
+            }
+            sb.append(s).append('\n');
+        }
+        if(sb.length() > 0) {
+            EmbedBuilder eb = supplier.apply(embeds.size()+1, total);
+            eb.setDescription(sb.toString());
+            embeds.add(eb.build());
+        }
+        Message m = event.getChannel().sendMessage(embeds.get(0)).complete();
+        return ReactionOperations.create(m, timeoutSeconds, (e)->{
+            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+            switch(e.getReactionEmote().getName()) {
+                case "\u2b05": //left arrow
+                    if(index.get() == 0) break;
+                    m.editMessage(embeds.get(index.decrementAndGet())).queue();
+                    break;
+                case "\u27a1": //right arrow
+                    if(index.get() + 1 >= embeds.size()) break;
+                    m.editMessage(embeds.get(index.incrementAndGet())).queue();
+                    break;
+            }
+            if(event.getGuild().getSelfMember().hasPermission(e.getTextChannel(), Permission.MESSAGE_MANAGE)) {
+                e.getReaction().removeReaction(e.getUser()).queue();
+            }
+            return false;
+        }, "\u2b05", "\u27a1");
+    }
+
+    public static Future<Void> listUpdatable(GuildMessageReceivedEvent event, int timeoutSeconds, boolean canEveryoneUse, IntIntObjectFunction<EmbedBuilder> supplier, String... parts) {
+        if(parts.length == 0) return null;
+        List<StringBuilder> embeds = new ArrayList<>();
+        AtomicInteger index = new AtomicInteger();
+        StringBuilder sb = new StringBuilder();
+        int total; {
+            int t = 0;
+            int c = 0;
+            for(String s : parts) {
+                if(s.length() + c > MessageEmbed.TEXT_MAX_LENGTH) {
+                    t++;
+                    c = 0;
+                }
+                c += s.length();
+            }
+            if(c > 0) t++;
+            total = t;
+        }
+        for(String s : parts) {
+            int l = s.length()+1;
+            if(l > MessageEmbed.TEXT_MAX_LENGTH) throw new IllegalArgumentException("Length for one of the pages is greater than the maximum");
+            if(sb.length() + l > MessageEmbed.TEXT_MAX_LENGTH) {
+                embeds.add(sb);
+                sb = new StringBuilder();
+            }
+            sb.append(s).append('\n');
+        }
+        if(sb.length() > 0) {
+            embeds.add(sb);
+        }
+        Message m = event.getChannel().sendMessage(supplier.apply(1, total).setDescription(embeds.get(0)).build()).complete();
+        return ReactionOperations.create(m, timeoutSeconds, (e)->{
+            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+            switch(e.getReactionEmote().getName()) {
+                case "\u2b05": {//left arrow
+                    if (index.get() == 0) break;
+                    int i = index.decrementAndGet();
+                    m.editMessage(supplier.apply(i+1, total).setDescription(embeds.get(i)).build()).queue();
+                } break;
+                case "\u27a1": {//right arrow
+                    if (index.get() + 1 >= embeds.size()) break;
+                    int i = index.incrementAndGet();
+                    m.editMessage(supplier.apply(i+1, total).setDescription(embeds.get(i)).build()).queue();
+                } break;
+            }
+            if(event.getGuild().getSelfMember().hasPermission(e.getTextChannel(), Permission.MESSAGE_MANAGE)) {
+                e.getReaction().removeReaction(e.getUser()).queue();
+            }
+            return false;
+        }, "\u2b05", "\u27a1");
     }
 }

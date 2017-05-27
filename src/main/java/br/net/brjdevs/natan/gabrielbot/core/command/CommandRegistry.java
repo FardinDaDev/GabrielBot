@@ -10,10 +10,8 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 
 public class CommandRegistry implements BiConsumer<String, Command> {
@@ -55,6 +53,10 @@ public class CommandRegistry implements BiConsumer<String, Command> {
                 return;
             }
             if(!cmd.permission().test(event.getMember())) {
+                if(cmd.permission() == CommandPermission.PREMIUM) {
+                    event.getChannel().sendMessage("This feature is [premium](https://www.patreon.com/gabrielbot) only").queue();
+                    return;
+                }
                 event.getChannel().sendMessage("You don't have permission to do this").queue();
                 return;
             }
@@ -63,7 +65,7 @@ public class CommandRegistry implements BiConsumer<String, Command> {
                 cmd.run(event);
             } catch(Throwable t) {
                 LOGGER.error("Error running command " + cmdname, t);
-                event.getChannel().sendMessage("There was an unexpected " + t.getClass().getSimpleName() + " running the command").queue();
+                event.getChannel().sendMessage("There was an unexpected error running the command, don't worry, it's already been reported and will be fixed as soon as possible").queue();
             }
         }
     }
@@ -74,7 +76,7 @@ public class CommandRegistry implements BiConsumer<String, Command> {
         CustomCommand custom = GabrielData.guilds().get().get(event.getGuild().getId()).customCommands.get(cmdname);
         String rawInput = event.getMessage().getRawContent();
 
-        String processed = custom.process(rawInput.substring(rawInput.indexOf(cmdname)+cmdname.length()),
+        String processed = custom.process(event, rawInput.substring(rawInput.indexOf(cmdname)+cmdname.length()),
                 "user", event.getAuthor().getName(),
                 "discrim", event.getAuthor().getDiscriminator(),
                 "mention", event.getAuthor().getAsMention(),
@@ -84,6 +86,7 @@ public class CommandRegistry implements BiConsumer<String, Command> {
                 "guild", event.getGuild().getName(),
                 "guildid", event.getGuild().getId()
         );
+        if(processed == null) return;
         if(processed.length() > 1990) {
             processed = "Done! " + Utils.paste(processed);
         }

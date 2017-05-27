@@ -13,6 +13,7 @@ import javax.tools.ToolProvider;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 @RegisterCommand.Class
 public class OwnerCommands {
@@ -24,7 +25,7 @@ public class OwnerCommands {
         addImport("java.math.*");
         addImport("java.util.function.*");
         addImport("java.util.stream.*");
-        addImport("java.lang.reflect.*");
+        addImport("java.br.net.brjdevs.natan.gabrielbot.lang.reflect.*");
 
         addImport("net.dv8tion.jda.core.*");
         addImport("net.dv8tion.jda.core.entities.*");
@@ -39,7 +40,6 @@ public class OwnerCommands {
         addImport("br.net.brjdevs.natan.gabrielbot.commands.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.command.*");
         addImport("br.net.brjdevs.natan.gabrielbot.commands.custom.*");
-        addImport("br.net.brjdevs.natan.gabrielbot.commands.custom.functions.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.data.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.jda.*");
         addImport("br.net.brjdevs.natan.gabrielbot.core.listeners.*");
@@ -59,7 +59,7 @@ public class OwnerCommands {
     @RegisterCommand
     public static void save(CommandRegistry cr) {
         cr.register("save", SimpleCommand.builder(CommandCategory.OWNER)
-                .description("save", "Flushes data to db")
+                .description("Flushes data to db")
                 .help((thiz, event)->thiz.helpEmbed(event, "save", "`>>save`"))
                 .code((event, args)->{
                     GabrielData.save();
@@ -70,9 +70,52 @@ public class OwnerCommands {
     }
 
     @RegisterCommand
+    public static void premium(CommandRegistry cr) {
+        cr.register("premium", SimpleCommand.builder(CommandCategory.OWNER)
+                .description("Gives premium to an user")
+                .help((thiz, event)->thiz.helpEmbed(event, "premium",
+                        "`>>premium user/guild <id> <days>`"
+                ))
+                .code((thiz, event, args)->{
+                    if(args.length < 3) {
+                        thiz.onHelp(event);
+                        return;
+                    }
+                    long id, time;
+                    try {
+                        id = Long.parseLong(args[1]);
+                        time = TimeUnit.DAYS.toMillis(Long.parseLong(args[2]));
+                    } catch(NumberFormatException e) {
+                        event.getChannel().sendMessage(e.getMessage() + ": not a valid number").queue();
+                        return;
+                    }
+                    switch(args[0]) {
+                        case "user":
+                            GabrielData.UserData user = GabrielData.users().get().get(String.valueOf(id));
+                            if(user == null) {
+                                GabrielData.users().get().set(String.valueOf(id), user = new GabrielData.UserData());
+                            }
+                            user.premiumUntil = time == 0 ? 0 : System.currentTimeMillis() + time;
+                            break;
+                        case "guild":
+                            GabrielData.GuildData guild = GabrielData.guilds().get().get(String.valueOf(id));
+                            if(guild == null) {
+                                GabrielData.guilds().get().set(String.valueOf(id), guild = new GabrielData.GuildData());
+                            }
+                            guild.premiumUntil = time == 0 ? 0 : System.currentTimeMillis() + time;
+                            break;
+                        default:
+                            thiz.onHelp(event);
+                    }
+                })
+                .build()
+        );
+    }
+
+    @RegisterCommand
     public static void shutdown(CommandRegistry cr) {
         cr.register("shutdown", SimpleCommand.builder(CommandCategory.OWNER)
-                .description("shutdown", "Puts me to sleep")
+                .description("Puts me to sleep")
                 .help((thiz, event)->thiz.helpEmbed(event, "shutdown", "`>>shutdown`"))
                 .code((event, args)->{
                     event.getChannel().sendMessage("*Goes to sleep...*").complete();
@@ -85,7 +128,7 @@ public class OwnerCommands {
     @RegisterCommand
     public static void dump(CommandRegistry cr) {
         cr.register("dump", SimpleCommand.builder(CommandCategory.OWNER)
-                .description("dump", "Dumpb threads or heap to a file")
+                .description("Dumps threads or heap to a file")
                 .help((thiz, event)->thiz.helpEmbed(event, "dump",
                         "`>>dump heap <file>`: Dumps the heap to the given file\n" +
                                 "`>>dump threads <file>`: Dumps the threads to the given file"
@@ -96,7 +139,6 @@ public class OwnerCommands {
                         return;
                     }
                     File file = new File(args[1]);
-                    //file.getParentFile().mkdirs();
                     switch(args[0]) {
                         case "heap":
                             try {
@@ -126,7 +168,7 @@ public class OwnerCommands {
     @RegisterCommand
     public static void blacklist(CommandRegistry cr) {
         cr.register("blacklist", SimpleCommand.builder(CommandCategory.OWNER)
-                .description("blacklist", "Adds or removes an user/guild from the blacklist")
+                .description("Adds or removes an user/guild from the blacklist")
                 .help((thiz, event)->thiz.helpEmbed(event, "blacklist",
                         "`>>blacklist add <id>`: Adds specified id to the blacklist\n" +
                                "`>>blacklist remove <id>`: Removes specified id from the blacklist"
@@ -161,7 +203,7 @@ public class OwnerCommands {
     @RegisterCommand
     public static void eval(CommandRegistry cr) {
         cr.register("eval", SimpleCommand.builder(CommandCategory.OWNER)
-                .description("eval", "Evaluates code")
+                .description("Evaluates code")
                 .help((thiz, event)->thiz.helpEmbed(event, "eval",
                         "`>>eval <code>`: evaluates java code"
                 ))

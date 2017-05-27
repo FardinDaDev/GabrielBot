@@ -38,11 +38,12 @@ public class Utils {
         while((read = from.read(buffer)) != -1) to.write(buffer, 0, read);
     }
 
-    public static String getDurationMinutes(long length) {
-        return String.format("%d:%02d minutes",
-                TimeUnit.MILLISECONDS.toMinutes(length),
-                TimeUnit.MILLISECONDS.toSeconds(length) -
-                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(length))
-        );
+    public static String getDuration(long time) {
+        long hours = TimeUnit.MILLISECONDS.toHours(time) % TimeUnit.DAYS.toHours(1);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(time) % TimeUnit.HOURS.toMinutes(1);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(time) % TimeUnit.MINUTES.toSeconds(1);
+        return (hours == 0 ? "" : hours + ":") +
+                (minutes == 0 ? "" : minutes + ":") +
+                (seconds == 0 ? "" : seconds + "").replaceAll(":$", "");
     }
 }

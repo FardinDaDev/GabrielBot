@@ -12,7 +12,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
 
 public interface SimpleCommand extends Command {
     @Override
@@ -39,10 +38,10 @@ public interface SimpleCommand extends Command {
                 .setFooter("Requested by " + event.getAuthor().getName(), null);
     }
 
-    default MessageEmbed helpEmbed(GuildMessageReceivedEvent event, String name, String defaultUsage) {
+    default MessageEmbed helpEmbed(GuildMessageReceivedEvent event, String name, String usage) {
         return helpEmbed(event, name)
                 .addField("Description", description(event), false)
-                .addField("Usage", getString(event.getGuild(), "cmd_" + name.toLowerCase() + "_usage", defaultUsage), false)
+                .addField("Usage", usage, false)
                 .build();
     }
 
@@ -60,8 +59,7 @@ public interface SimpleCommand extends Command {
         private Function<GuildMessageReceivedEvent, String[]> splitter;
         private TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]> code;
         private BiFunction<SimpleCommand, GuildMessageReceivedEvent, MessageEmbed> help;
-        private String name;
-        private String defaultDescription;
+        private String description;
         private CommandPermission permission;
         private boolean hidden = false;
 
@@ -89,9 +87,8 @@ public interface SimpleCommand extends Command {
             this.help = Preconditions.checkNotNull(help, "help");
             return this;
         }
-        public Builder description(String name, String defaultDescription) {
-            this.name = Preconditions.checkNotNull(name, "name");
-            this.defaultDescription = Preconditions.checkNotNull(defaultDescription, "defaultDescription");
+        public Builder description(String description) {
+            this.description = Preconditions.checkNotNull(description, "description");
             return this;
         }
 
@@ -113,7 +110,7 @@ public interface SimpleCommand extends Command {
         public Command build() {
             Preconditions.checkNotNull(code, "code");
             Preconditions.checkNotNull(permission, "permission");
-            Preconditions.checkNotNull(defaultDescription, "defaultDescription");
+            Preconditions.checkNotNull(description, "description");
             if(help == null)
                 help = (ignored1, ignored2)->new EmbedBuilder().setDescription("No help available for this command").build();
             return new SimpleCommand() {
@@ -129,7 +126,7 @@ public interface SimpleCommand extends Command {
 
                 @Override
                 public String description(GuildMessageReceivedEvent event) {
-                    return getString(event.getGuild(), "cmd_" + name + "_desc", defaultDescription);
+                    return description;
                 }
 
                 @Override

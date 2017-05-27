@@ -14,10 +14,6 @@ import org.json.JSONObject;
 import java.awt.*;
 import java.io.File;
 
-import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.IMAGE_NOT_FOUND;
-import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.NOT_NSFW;
-import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.getString;
-
 @RegisterCommand.Class
 public class ImageCommands {
     private static final URLCache cache = new URLCache(new File(".urlcache"), 10);
@@ -27,7 +23,7 @@ public class ImageCommands {
     @RegisterCommand
     public static void catgirls(CommandRegistry cr) {
         cr.register("catgirls", SimpleCommand.builder(CommandCategory.IMAGE)
-                .description("catgirls", "Sends catgirl pictures")
+                .description("Sends catgirl pictures")
                 .help((thiz, event)->thiz.helpEmbed(event, "catgirls",
                         "`>>catgirls`: sends catgirl safe image\n`>>catgirls nsfw`: sends lewd catgirl image"
                 ))
@@ -38,7 +34,7 @@ public class ImageCommands {
                             if(!event.getChannel().isNSFW())  {
                                 GabrielData.ChannelData data = GabrielData.channels().get().get(event.getChannel().getId());
                                 if(data == null || !data.nsfw) {
-                                    event.getChannel().sendMessage(getString(event.getGuild(), NOT_NSFW, "Not in a NSFW channel")).queue();
+                                    event.getChannel().sendMessage("Not in a NSFW channel").queue();
                                     return;
                                 }
                             }
@@ -48,12 +44,12 @@ public class ImageCommands {
                                 .getBody()
                                 .getObject();
                         if(!obj.has("url")) {
-                            event.getChannel().sendMessage(getString(event.getGuild(), IMAGE_NOT_FOUND, "Unable to find image")).queue();
+                            event.getChannel().sendMessage("Unable to find image").queue();
                         } else {
                             event.getChannel().sendFile(cache.input(obj.getString("url")), "catgirls.png", null).queue();
                         }
                     } catch(UnirestException e) {
-                        event.getChannel().sendMessage(getString(event.getGuild(), IMAGE_NOT_FOUND, "Unable to find image")).queue();
+                        event.getChannel().sendMessage("Unable to find image").queue();
                     }
                 })
                 .build());
@@ -62,7 +58,7 @@ public class ImageCommands {
     @RegisterCommand
     public static void doge(CommandRegistry cr) {
         cr.register("doge", SimpleCommand.builder(CommandCategory.IMAGE)
-                .description("doge", "Sends doge images with custom texts")
+                .description("Sends doge images with custom texts")
                 .help((thiz, event)->thiz.helpEmbed(event, "doge", "`>>doge wow \"such doge\"`"))
                 .code((thiz, event, args)->{
                     String url = "http://dogr.io/" +  String.join("/", args).replace(" ", "%20") + ".png?split=false";

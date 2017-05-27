@@ -4,8 +4,6 @@ import net.dv8tion.jda.core.entities.Guild;
 
 import java.nio.ByteBuffer;
 
-import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
-
 public class BrainfuckInterpreter {
     public final int maxCycleCount;
     public final int memory;
@@ -26,9 +24,7 @@ public class BrainfuckInterpreter {
             for (int instruction = 0; instruction < code.length; ++instruction) {
                 cycleCount++;
                 if (cycleCount > maxCycleCount) {
-                    throw new BrainfuckException(
-                            getString(guild, Fun.BRAINFUCK_CYCLE_LIMIT, "Exceeded max amount of cycles (%max%)").replace("%max%", String.valueOf(maxCycleCount))
-                    );
+                    throw new BrainfuckException("Exceeded max amount of cycles (" + maxCycleCount + ")");
                 }
                 char command = code[instruction];
                 switch (command) {
@@ -38,9 +34,7 @@ public class BrainfuckInterpreter {
                     case '<':
                         --data;
                         if(data < 0){
-                            throw new BrainfuckException(
-                                    getString(guild, Fun.BRAINFUCK_DATA_POINTER_OUT_OF_BOUNDS, "Data pointer out of bounds")
-                            );
+                            throw new BrainfuckException("Data pointer out of bounds");
                         }
                         break;
                     case '+':
@@ -57,9 +51,7 @@ public class BrainfuckInterpreter {
                             bytes.put(data, (byte) inChars[inChar++]);
                             break;
                         } catch (IndexOutOfBoundsException ex) {
-                            throw new BrainfuckException(
-                                    getString(guild, Fun.BRAINFUCK_INPUT_OUT_OF_BOUNDS, "Input out of bounds")
-                            );
+                            throw new BrainfuckException("Input out of bounds");
                         }
                     case '[':
                         if (bytes.get(data) == 0) {
@@ -90,9 +82,7 @@ public class BrainfuckInterpreter {
                 }
             }
         } catch(IndexOutOfBoundsException e) {
-            throw new BrainfuckException(
-                    getString(guild, Fun.BRAINFUCK_DATA_POINTER_OUT_OF_BOUNDS, "Data pointer out of bounds")
-            );
+            throw new BrainfuckException("Data pointer out of bounds");
         }
         return output.toString();
     }

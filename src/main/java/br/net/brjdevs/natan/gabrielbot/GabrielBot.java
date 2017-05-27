@@ -8,6 +8,7 @@ import br.net.brjdevs.natan.gabrielbot.core.jda.Shard;
 import br.net.brjdevs.natan.gabrielbot.log.DebugPrintStream;
 import br.net.brjdevs.natan.gabrielbot.log.DiscordLogBack;
 import br.net.brjdevs.natan.gabrielbot.music.GuildMusicPlayer;
+import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import com.mashape.unirest.http.Unirest;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
@@ -76,6 +77,7 @@ public class GabrielBot {
         long l = System.nanoTime();
         for(Class<?> cls : r.getTypesAnnotatedWith(RegisterCommand.Class.class)) {
             Object instance = null;
+            UnsafeUtils.initializeClass(cls);
             for(Method m : cls.getMethods()) {
                 if(m.getAnnotation(RegisterCommand.class) == null) continue;
                 if(Modifier.isStatic(m.getModifiers())) {
@@ -94,7 +96,7 @@ public class GabrielBot {
         long ll = System.nanoTime()-l;
         LOGGER.info("Registered {} commands in {} ns ({} ms)", registry.commands().size(), ll, ll/1_000_000);
 
-        Thread t = new Thread(()->{
+        Thread dataSaver = new Thread(()->{
             while(true) {
                 try {
                     Thread.sleep(3_600_000);
@@ -105,8 +107,8 @@ public class GabrielBot {
                 GabrielData.save();
             }
         }, "DataSaverThread");
-        t.setDaemon(true);
-        t.start();
+        dataSaver.setDaemon(true);
+        dataSaver.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(GabrielData::save, "ShutdownHookSaverThread"));
 
@@ -118,6 +120,7 @@ public class GabrielBot {
             shards[i] = new Shard(config.token, i, shards.length, config.nas);
         }
         DiscordLogBack.enable();
+        playerManager.setItemLoaderThreadPoolSize(40);
         LOGGER.info("Loading done!");
         loaded = true;
     }
@@ -128,6 +131,10 @@ public class GabrielBot {
 
     public Shard[] getShards() {
         return shards.clone();
+    }
+
+    public Shard getShard(long guildId) {
+        return shards[calculateShardId(guildId)];
     }
 
     public GuildMusicPlayer getPlayer(long guildId) {
@@ -232,7 +239,7 @@ public class GabrielBot {
         return instance;
     }
 
-    private int getRecommendedShards(Config config) {
+    private static int getRecommendedShards(Config config) {
         if (DEBUG) return 2;
         try {
             return Unirest.get("https://discordapp.com/api/gateway/bot")

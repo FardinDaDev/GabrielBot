@@ -59,7 +59,7 @@ public class OptionsCommand {
     public static void register(CommandRegistry registry) {
         registry.register("opts", SimpleCommand.builder(CommandCategory.MODERATION)
                 .permission(CommandPermission.ADMIN)
-                .description("opts", "Changes local options")
+                .description("Changes local options")
                 .help((thiz, event)->thiz.helpEmbed(event, "opts",
                         "`>>opts nsfw toggle`: toggles nsfw on the channel it's run\n" +
                                "`>>opts prefix set <prefix>`: changes the prefix for this guild"
@@ -83,7 +83,7 @@ public class OptionsCommand {
                             return;
                         }
                     }
-                    event.getChannel().sendMessage(thiz.help(event)).queue();
+                    thiz.onHelp(event);
                 })
                 .build());
     }

@@ -11,7 +11,6 @@ import br.net.brjdevs.natan.gabrielbot.utils.data.JedisSerializatorDataManager;
 import br.net.brjdevs.natan.gabrielbot.utils.data.SerializedData;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.pool.KryoPool;
-import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.io.File;
@@ -124,7 +123,7 @@ public final class GabrielData {
     @Version(0)
     public static class GuildCommandData {
         @Since(0)
-        public String prefix = ">>";
+        public String prefix = null;
         @Since(0)
         public Set<String> custom = new CopyOnWriteArraySet<>();
     }

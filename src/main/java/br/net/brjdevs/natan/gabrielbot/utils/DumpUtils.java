@@ -24,7 +24,7 @@ public class DumpUtils {
             dump.append(threadInfo.getThreadName());
             dump.append("\" ");
             final Thread.State state = threadInfo.getThreadState();
-            dump.append("\n   java.lang.Thread.State: ");
+            dump.append("\n   java.br.net.brjdevs.natan.gabrielbot.lang.Thread.State: ");
             dump.append(state);
             final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
             for (final StackTraceElement stackTraceElement : stackTraceElements) {
@@ -56,7 +56,6 @@ public class DumpUtils {
         }
     }
 
-    // initialize the hotspot diagnostic MBean field
     private static void initHotspotMBean() {
         if(hotspotMBean == null) {
             synchronized(DumpUtils.class) {

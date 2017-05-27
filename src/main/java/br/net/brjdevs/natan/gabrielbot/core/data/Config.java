@@ -13,14 +13,16 @@ import java.util.Map;
 public class Config {
     public final String prefix;
     public final String token;
+    public final String dbotsToken;
     public final boolean nas;
     public final long[] owners;
     public final Map<String, DBInfo> dbs;
     public final long console;
 
-    private Config(String prefix, String token, boolean nas, long[] owners, Map<String, DBInfo> dbs, long console) {
+    private Config(String prefix, String token, String dbotsToken, boolean nas, long[] owners, Map<String, DBInfo> dbs, long console) {
         this.prefix = prefix;
         this.token = token;
+        this.dbotsToken = dbotsToken;
         this.nas = nas;
         this.owners = owners;
         this.dbs = dbs;
@@ -71,6 +73,7 @@ public class Config {
         JSONObject obj = new JSONObject(new String(baos.toByteArray(), Charset.defaultCharset()));
         String prefix = obj.getString("prefix");
         String token = obj.getString("token");
+        String dbotsToken = obj.getString("dbotsToken");
         boolean nas = obj.getBoolean("nas");
         long[] owners;
         {
@@ -89,7 +92,7 @@ public class Config {
             }
         }
         long console = obj.getLong("console");
-        return new Config(prefix, token, nas, owners, dbs, console);
+        return new Config(prefix, token, dbotsToken, nas, owners, dbs, console);
     }
 
     public static class DBInfo {

@@ -17,8 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static br.net.brjdevs.natan.gabrielbot.core.localization.LocalizationManager.*;
-
 public class TrackScheduler extends AudioEventAdapter {
     public static final Logger LOGGER = LoggerFactory.getLogger(TrackScheduler.class);
     public static final int MAX_QUEUE_SIZE = 300;
@@ -39,29 +37,21 @@ public class TrackScheduler extends AudioEventAdapter {
         int votes = getRequiredVotes(guildMusicPlayer.getVoiceChannel());
         if(voteskips.contains(userId)) {
             voteskips.remove(userId);
-            tc.sendMessage(
-                    getString(guild, Music.VOTE_REMOVED, "Your vote has been removed! $votes$ more to skip").replace("$votes$", String.valueOf(votes-voteskips.size()))
-            ).queue();
+            tc.sendMessage("Your vote has been removed! " + (votes-voteskips.size()) + " more to skip").queue();
         } else {
             voteskips.add(userId);
             if(voteskips.size() >= votes) {
-                tc.sendMessage(
-                        getString(guild, Music.SKIPPING, "Reached required number of votes, skipping song")
-                ).queue();
+                tc.sendMessage("Reached required number of votes, skipping song").queue();
                 nextTrack();
             } else {
-                tc.sendMessage(
-                        getString(guild, Music.VOTE_ADDED, "Your vote has been added! $votes$ more to skip").replace("$votes$", String.valueOf(votes-voteskips.size()))
-                ).queue();
+                tc.sendMessage("Your vote has been added! " + (votes-voteskips.size()) + " more to skip").queue();
             }
         }
     }
 
     public void nextTrack() {
         if(tracks.size() == 0) {
-            guildMusicPlayer.getTextChannel().sendMessage(
-                    getString(guildMusicPlayer.getGuild(), Music.FINISHED_PLAYING, "Finished playing")
-            ).queue();
+            guildMusicPlayer.getTextChannel().sendMessage("Finished playing").queue();
             GabrielBot.getInstance().removePlayer(guildMusicPlayer.guildId);
         } else {
             voteskips.clear();
@@ -96,12 +86,14 @@ public class TrackScheduler extends AudioEventAdapter {
         }
     }
 
+    public ConcurrentLinkedQueue<Track> tracks() {
+        return tracks;
+    }
+
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
         deletePlayingMessage();
-        guildMusicPlayer.getTextChannel().sendMessage(
-                getString(guildMusicPlayer.getGuild(), Music.NOW_PLAYING, "Now playing $identifier$").replace("$identifier$", track.getInfo().title)
-        ).queue(m->{
+        guildMusicPlayer.getTextChannel().sendMessage("Now playing " + track.getInfo().title).queue(m->{
             playingMessageId = m.getIdLong();
         });
     }
@@ -117,24 +109,18 @@ public class TrackScheduler extends AudioEventAdapter {
     public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
         deletePlayingMessage();
         if(exception.severity == FriendlyException.Severity.COMMON) {
-            guildMusicPlayer.getTextChannel().sendMessage(
-                    getString(guildMusicPlayer.getGuild(), Music.UNABLE_TO_PLAY_COMMON, "Unable to play $identifier$: $msg$").replace("$identifier$", track.getInfo().title).replace("$msg$", exception.getMessage())
-            ).queue();
+            guildMusicPlayer.getTextChannel().sendMessage("Unable to play " + track.getInfo().title + ": " + exception.getMessage()).queue();
             nextTrack();
             return;
         }
-        guildMusicPlayer.getTextChannel().sendMessage(
-                getString(guildMusicPlayer.getGuild(), Music.UNABLE_TO_PLAY_REPORTED, "An error occurred while playing, it's already been reported")
-        ).queue();
+        guildMusicPlayer.getTextChannel().sendMessage("An error occurred while playing, it's already been reported").queue();
         LOGGER.error("Error playing " + track.getIdentifier(), exception);
     }
 
     @Override
     public void onTrackStuck(AudioPlayer player, AudioTrack track, long thresholdMs) {
         deletePlayingMessage();
-        guildMusicPlayer.getTextChannel().sendMessage(
-                getString(guildMusicPlayer.getGuild(), Music.TRACK_STUCK, "Track $identifier$ got stuck, skipping...").replace("$identifier$", track.getInfo().title)
-        ).queue();
+        guildMusicPlayer.getTextChannel().sendMessage("Track got stuck, skipping...").queue();
         nextTrack();
     }
 
