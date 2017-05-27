@@ -33,4 +33,11 @@ public abstract class CustomCommand {
             return new TextCustomCommand(text);
         }
     }
+
+    protected static String map(String command, Map<String, String> mappings) {
+        for(Map.Entry<String, String> entry : mappings.entrySet()) {
+            command = command.replace("$(" + entry.getKey() + ")", entry.getValue());
+        }
+        return command;
+    }
 }

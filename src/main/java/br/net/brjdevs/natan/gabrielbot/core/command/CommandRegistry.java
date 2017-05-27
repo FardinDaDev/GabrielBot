@@ -6,6 +6,11 @@ import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import br.net.brjdevs.natan.gabrielbot.utils.data.JedisDataManager;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.MessageStats;
 import com.google.common.base.Preconditions;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +81,11 @@ public class CommandRegistry implements BiConsumer<String, Command> {
         CustomCommand custom = GabrielData.guilds().get().get(event.getGuild().getId()).customCommands.get(cmdname);
         String rawInput = event.getMessage().getRawContent();
 
+        User user = event.getAuthor();
+        Member m = event.getMember();
+        Guild g = event.getGuild();
+        Message msg = event.getMessage();
+        TextChannel c = event.getChannel();
         String processed = custom.process(event, rawInput.substring(rawInput.indexOf(cmdname)+cmdname.length()),
                 "user", event.getAuthor().getName(),
                 "discrim", event.getAuthor().getDiscriminator(),
@@ -84,7 +94,21 @@ public class CommandRegistry implements BiConsumer<String, Command> {
                 "userid", event.getAuthor().getId(),
                 "channelid", event.getChannel().getId(),
                 "guild", event.getGuild().getName(),
-                "guildid", event.getGuild().getId()
+                "guildid", event.getGuild().getId(),
+                "event.message.raw", msg.getRawContent(),
+                "event.message.stripped", msg.getStrippedContent(),
+                "event.message", msg.getContent(),
+                "event.author.mention", user.getAsMention(),
+                "event.author.username", user.getName(),
+                "event.author.discriminator", user.getDiscriminator(),
+                "event.author.name", m.getEffectiveName(),
+                "event.guild.name", g.getName(),
+                "event.guild.owner.name", g.getOwner().getEffectiveName(),
+                "event.guild.owner.username", g.getOwner().getUser().getName(),
+                "event.guild.owner.discriminator", g.getOwner().getUser().getDiscriminator(),
+                "event.channel.name", c.getName(),
+                "event.channel.topic", c.getTopic(),
+                "event.channel.mention", c.getAsMention()
         );
         if(processed == null) return;
         if(processed.length() > 1990) {

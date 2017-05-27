@@ -13,7 +13,7 @@ public class TextCustomCommand extends CustomCommand {
 
     @Override
     public String process(GuildMessageReceivedEvent event, String input, Map<String, String> mappings) {
-        return text;
+        return map(text, mappings);
     }
 
     @Override

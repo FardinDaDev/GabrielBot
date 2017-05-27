@@ -56,7 +56,7 @@ public class EmbedCustomCommand extends CustomCommand {
         MessageEmbed.AuthorInfo[] author = {new MessageEmbed.AuthorInfo("", null, null, null)};
         List<MessageEmbed.Field> fields = new LinkedList<>();
         jsonObj.toMap().forEach((key, value)->{
-            String v = String.valueOf(value);
+            String v = map(String.valueOf(value), mappings);
             switch(key.toLowerCase()) {
                 case "title":
                     embed.setTitle(v);
