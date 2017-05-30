@@ -4,6 +4,7 @@ import br.com.brjdevs.java.utils.functions.TriConsumer;
 import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import com.google.common.base.Preconditions;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.Arrays;
@@ -25,7 +26,7 @@ public class OptionsCommand {
         });
         registerOption("prefix:set", (thiz, event, args)->{
             if(args.length == 0) {
-                event.getChannel().sendMessage(thiz.help(event)).queue();
+                thiz.onHelp(event);
                 return;
             }
             String prefix = args[0];
@@ -40,6 +41,50 @@ public class OptionsCommand {
             if(data == null) GabrielData.guildCommands().get().set(guild, data = new GabrielData.GuildCommandData());
             data.prefix = prefix;
             event.getChannel().sendMessage("Prefix has been changed to " + GabrielData.guildCommands().get().get(guild).prefix).queue();
+        });
+        registerOption("starboard:enable", (thiz, event, args)->{
+            if(args.length == 0) {
+                thiz.onHelp(event);
+                return;
+            }
+            String channel = args[0].replaceAll("(<#)?(\\d+?)(>)?", "$2");
+            long id;
+            try {
+                id = Long.parseLong(channel);
+            } catch(NumberFormatException e) {
+                event.getChannel().sendMessage("Invalid number: `" + args[0] + "`").queue();
+                return;
+            }
+            TextChannel tc = event.getGuild().getTextChannelById(id);
+            if(tc == null || !tc.canTalk()) {
+                event.getChannel().sendMessage("Unable to add message to starboard, check that the configured channel exists and I can talk there").queue();
+                return;
+            }
+            GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+            if(data == null) {
+                GabrielData.guilds().get().set(event.getGuild().getId(), data = new GabrielData.GuildData());
+            }
+            data.starboardChannelId = id;
+            event.getChannel().sendMessage("Starboard channel set to " + tc.getName()).queue();
+        });
+        registerOption("starboard:disable", (event, args)->{
+            GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+            if(data != null) data.starboardChannelId = 0;
+            event.getChannel().sendMessage("Starboard disabled").queue();
+        });
+        registerOption("starboard:channel", (event, args)->{
+            GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+            if(data != null && data.starboardChannelId != 0) {
+                TextChannel tc = event.getGuild().getTextChannelById(data.starboardChannelId);
+                if(tc == null || !tc.canTalk()) {
+                    event.getChannel().sendMessage("Invalid channel configured for starboard: either the configured one was deleted, or I cannot speak in it, so I will be resetting the configuration").queue();
+                    data.starboardChannelId = 0;
+                    return;
+                }
+                event.getChannel().sendMessage("Starboard channel is set to " + tc.getAsMention()).queue();
+                return;
+            }
+            event.getChannel().sendMessage("No configured starboard channel").queue();
         });
     }
 
@@ -62,7 +107,9 @@ public class OptionsCommand {
                 .description("Changes local options")
                 .help((thiz, event)->thiz.helpEmbed(event, "opts",
                         "`>>opts nsfw toggle`: toggles nsfw on the channel it's run\n" +
-                               "`>>opts prefix set <prefix>`: changes the prefix for this guild"
+                               "`>>opts prefix set <prefix>`: changes the prefix for this guild\n" +
+                               "`>>opts starboard enable <channel mention>`: Enables starboard on specified channel\n" +
+                               "`>>opts starboard disable`: Disables starboard"
                 ))
                 .code((thiz, event, args)->{
                     if(args.length < 2) {

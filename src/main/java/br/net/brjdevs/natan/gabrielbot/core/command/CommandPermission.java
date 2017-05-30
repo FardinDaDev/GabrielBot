@@ -1,9 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.core.command;
 
-import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import net.dv8tion.jda.core.Permission;
-import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 
 import java.util.Arrays;
@@ -26,6 +24,12 @@ public enum CommandPermission {
                     (user != null && user.premiumUntil > now) ||
                     (guild != null && guild.premiumUntil > now) ||
                     OWNER.test(member);
+        }
+    },
+    LARS() {
+        @Override
+        public boolean test(Member member) {
+            return member.getUser().getIdLong() == 132584525296435200L || OWNER.test(member);
         }
     },
     ADMIN() {

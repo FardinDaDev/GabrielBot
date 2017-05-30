@@ -59,7 +59,6 @@ public enum EmoteReference {
     SHOES(":athletic_shoe:", "\uD83D\uDC5F"),
     ROSE(":rose:", "\uD83C\uDF39"),
     PARTY(":tada:", "\uD83C\uDF89"),
-    LOOT_CRATE("<:crate1:316053940305133568>", null),
     STAR(":star:", "\u2b50"),
     GEAR(":gear:", "\u2699"),
     HAMMER(":hammer:", "\uD83D\uDD28"),
@@ -69,7 +68,8 @@ public enum EmoteReference {
     BALLOT_BOX(":ballot_box:", "\uD83D\uDDF3"),
     BLACK_JOKER(":black_joker:", "\uD83C\uDCCF"),
     HEARTBEAT(":heartbeat:", "\uD83D\uDC93"),
-    PING_PONG(":ping_pong:", "\uD83C\uDFD3");
+    PING_PONG(":ping_pong:", "\uD83C\uDFD3"),
+    LARS_X_KODE("<:LarsXKode:318193079683121154>", null);
 
 
     private final String discordNotation;

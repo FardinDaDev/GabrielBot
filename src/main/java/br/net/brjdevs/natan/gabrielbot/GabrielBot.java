@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GabrielBot {
     public static final boolean DEBUG = System.getProperty("gabriel.debug", null) != null;
@@ -147,6 +148,14 @@ public class GabrielBot {
 
     public GuildMusicPlayer removePlayer(long guildId) {
         return shards[calculateShardId(guildId)].removePlayer(guildId);
+    }
+
+    public List<GuildMusicPlayer> players() {
+        return streamPlayers().collect(Collectors.toList());
+    }
+
+    public Stream<GuildMusicPlayer> streamPlayers() {
+        return Arrays.stream(shards).flatMap(s->s.players().stream());
     }
 
     public int calculateShardId(long guildId) {

@@ -128,12 +128,14 @@ public final class GabrielData {
         public Set<String> custom = new CopyOnWriteArraySet<>();
     }
 
-    @Version(0)
+    @Version(1)
     public static class GuildData {
         @Since(0)
         public Map<String, CustomCommand> customCommands = new ConcurrentHashMap<>();
         @Since(0)
         public long premiumUntil = 0;
+        @Since(1)
+        public long starboardChannelId;
     }
 
     @Version(0)

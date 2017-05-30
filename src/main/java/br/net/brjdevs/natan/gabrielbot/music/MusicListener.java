@@ -27,18 +27,22 @@ public class MusicListener implements EventListener {
 
     @Listener
     public void onGuildVoiceMove(GuildVoiceMoveEvent event) {
-        onJoin(event.getChannelJoined());
-        onLeave(event.getChannelLeft());
+        if(event.getChannelJoined().getMembers().contains(event.getGuild().getSelfMember()))
+            onJoin(event.getChannelJoined());
+        if(event.getChannelLeft().getMembers().contains(event.getGuild().getSelfMember()))
+            onLeave(event.getChannelLeft());
     }
 
     @Listener
     public void onGuildVoiceJoin(GuildVoiceJoinEvent event) {
-        onJoin(event.getChannelJoined());
+        if(event.getChannelJoined().getMembers().contains(event.getGuild().getSelfMember()))
+            onJoin(event.getChannelJoined());
     }
 
     @Listener
     public void onGuildVoiceLeave(GuildVoiceLeaveEvent event) {
-        onLeave(event.getChannelLeft());
+        if(event.getChannelLeft().getMembers().contains(event.getGuild().getSelfMember()))
+            onLeave(event.getChannelLeft());
     }
 
     @Listener

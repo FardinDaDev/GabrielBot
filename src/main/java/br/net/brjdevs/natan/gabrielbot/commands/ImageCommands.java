@@ -9,6 +9,8 @@ import br.net.brjdevs.natan.gabrielbot.utils.cache.URLCache;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.json.JSONObject;
 
 import java.awt.*;
@@ -46,6 +48,7 @@ public class ImageCommands {
                         if(!obj.has("url")) {
                             event.getChannel().sendMessage("Unable to find image").queue();
                         } else {
+                            checkVerification(event);
                             event.getChannel().sendFile(cache.input(obj.getString("url")), "catgirls.png", null).queue();
                         }
                     } catch(UnirestException e) {
@@ -61,6 +64,7 @@ public class ImageCommands {
                 .description("Sends doge images with custom texts")
                 .help((thiz, event)->thiz.helpEmbed(event, "doge", "`>>doge wow \"such doge\"`"))
                 .code((thiz, event, args)->{
+                    checkVerification(event);
                     String url = "http://dogr.io/" +  String.join("/", args).replace(" ", "%20") + ".png?split=false";
                     event.getChannel().sendMessage(new EmbedBuilder()
                             .setColor(Color.YELLOW)
@@ -70,5 +74,11 @@ public class ImageCommands {
                 })
                 .build()
         );
+    }
+
+    private static void checkVerification(GuildMessageReceivedEvent event) {
+        if(event.getGuild().getExplicitContentLevel() != Guild.ExplicitContentLevel.OFF) {
+            event.getChannel().sendMessage("Warning: this guild had explicit content scanning enabled, so images may take a while to load").queue();
+        }
     }
 }

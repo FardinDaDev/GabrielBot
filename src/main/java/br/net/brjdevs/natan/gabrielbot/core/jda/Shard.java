@@ -3,8 +3,9 @@ package br.net.brjdevs.natan.gabrielbot.core.jda;
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.MainListener;
-import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.InteractiveOperations;
-import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.ReactionOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.StarboardListener;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.InteractiveOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import br.net.brjdevs.natan.gabrielbot.music.GuildMusicPlayer;
 import br.net.brjdevs.natan.gabrielbot.music.MusicListener;
 import com.mashape.unirest.http.Unirest;
@@ -23,6 +24,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -42,7 +44,7 @@ public class Shard {
                 .setAutoReconnect(true)
                 .setCorePoolSize(10)
                 .setEventManager(new EventManager(shardId))
-                .addEventListener(new MainListener(), new MusicListener(), InteractiveOperations.listener(), ReactionOperations.listener())
+                .addEventListener(new MainListener(), new MusicListener(), new StarboardListener(), InteractiveOperations.listener(), ReactionOperations.listener())
                 .setGame(Game.of(GabrielData.config().prefix + "help"));
         if(totalShards > 1) {
             builder.useSharding(shardId, totalShards);
@@ -118,5 +120,9 @@ public class Shard {
             return false;
         });
         return gmp[0];
+    }
+
+    public List<GuildMusicPlayer> players() {
+        return new ArrayList<>(players);
     }
 }

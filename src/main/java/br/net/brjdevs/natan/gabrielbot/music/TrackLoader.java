@@ -1,7 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.music;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.ReactionOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import br.net.brjdevs.natan.gabrielbot.utils.DiscordUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;

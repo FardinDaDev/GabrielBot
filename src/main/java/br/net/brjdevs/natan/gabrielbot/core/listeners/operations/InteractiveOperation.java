@@ -1,4 +1,4 @@
-package br.net.brjdevs.natan.gabrielbot.core.listeners.interactive;
+package br.net.brjdevs.natan.gabrielbot.core.listeners.operations;
 
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 

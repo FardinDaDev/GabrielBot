@@ -1,20 +1,17 @@
 package br.net.brjdevs.natan.gabrielbot.utils;
 
-import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.InteractiveOperations;
-import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.ReactionOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.InteractiveOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageEmbed;
-import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -22,8 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
 
 public class DiscordUtils {
     public static <T> Pair<String, Integer> embedList(List<T> list, Function<T, String> toString) {
@@ -129,11 +124,11 @@ public class DiscordUtils {
             int t = 0;
             int c = 0;
             for(String s : parts) {
-                if(s.length() + c > MessageEmbed.TEXT_MAX_LENGTH) {
+                if(s.length() + c + 1 > MessageEmbed.TEXT_MAX_LENGTH) {
                     t++;
                     c = 0;
                 }
-                c += s.length();
+                c += s.length() + 1;
             }
             if(c > 0) t++;
             total = t;
@@ -183,11 +178,11 @@ public class DiscordUtils {
             int t = 0;
             int c = 0;
             for(String s : parts) {
-                if(s.length() + c > MessageEmbed.TEXT_MAX_LENGTH) {
+                if(s.length() + c + 1 > MessageEmbed.TEXT_MAX_LENGTH) {
                     t++;
                     c = 0;
                 }
-                c += s.length();
+                c += s.length() + 1;
             }
             if(c > 0) t++;
             total = t;

@@ -1,4 +1,4 @@
-package br.net.brjdevs.natan.gabrielbot.core.listeners.interactive;
+package br.net.brjdevs.natan.gabrielbot.core.listeners.operations;
 
 import br.com.brjdevs.highhacks.eventbus.Listener;
 import net.dv8tion.jda.core.entities.MessageChannel;

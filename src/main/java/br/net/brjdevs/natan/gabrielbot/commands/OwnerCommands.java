@@ -23,9 +23,10 @@ public class OwnerCommands {
         addImport("java.util.*");
         addImport("java.net.*");
         addImport("java.math.*");
+        addImport("java.io.*");
         addImport("java.util.function.*");
         addImport("java.util.stream.*");
-        addImport("java.br.net.brjdevs.natan.gabrielbot.lang.reflect.*");
+        addImport("java.lang.reflect.*");
 
         addImport("net.dv8tion.jda.core.*");
         addImport("net.dv8tion.jda.core.entities.*");

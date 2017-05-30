@@ -3,7 +3,7 @@ package br.net.brjdevs.natan.gabrielbot.core.listeners;
 import br.com.brjdevs.highhacks.eventbus.Listener;
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
-import br.net.brjdevs.natan.gabrielbot.core.listeners.interactive.ReactionOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.MessageStats;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;

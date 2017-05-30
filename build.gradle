@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     //compile 'com.github.DV8FromTheWorld:JDA:c92078d'
-    compile 'net.dv8tion:JDA:3.1.0_206'
+    compile 'net.dv8tion:JDA:3.1.1_210'
 
     compile 'com.sedmelluq:lavaplayer:1.2.39'
     compile 'com.sedmelluq:jda-nas:1.0.5'
@@ -29,7 +29,7 @@ dependencies {
     compile 'br.com.brjdevs:utils:1.0.0_4'
     compile 'br.com.brjdevs:highhacks:1.0.0_2'
 
-    compile 'com.google.guava:guava:21.0'
+    compile 'com.google.guava:guava:22.0'
 
     compile 'redis.clients:jedis:2.9.0'
     compile 'com.esotericsoftware:kryo:4.0.0'
@@ -37,8 +37,6 @@ dependencies {
     compile 'com.github.ben-manes.caffeine:caffeine:2.4.0'
 
     compile 'net.jodah:expiringmap:0.5.8'
-
-    compile 'com.sparkjava:spark-core:2.6.0'
 }
 
 shadowJar {
