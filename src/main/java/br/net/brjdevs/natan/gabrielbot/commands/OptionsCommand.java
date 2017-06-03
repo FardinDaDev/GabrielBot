@@ -4,6 +4,8 @@ import br.com.brjdevs.java.utils.functions.TriConsumer;
 import br.net.brjdevs.natan.gabrielbot.core.command.*;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import com.google.common.base.Preconditions;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
@@ -86,6 +88,64 @@ public class OptionsCommand {
             }
             event.getChannel().sendMessage("No configured starboard channel").queue();
         });
+        registerOption("starboard:min", (thiz, event, args)->{
+            if(args.length == 0) {
+                thiz.onHelp(event);
+                return;
+            }
+            int min;
+            try {
+                min = Integer.parseInt(args[0]);
+            } catch(NumberFormatException e) {
+                event.getChannel().sendMessage("`" + args[0] + "` is not a valid number").queue();
+                return;
+            }
+            if(min < 1) {
+                event.getChannel().sendMessage("Minimum must be greater than 0").queue();
+                return;
+            }
+            GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+            if(data == null) {
+                GabrielData.guilds().get().set(event.getGuild().getId(), data = new GabrielData.GuildData());
+            }
+            data.minStars = min;
+            event.getChannel().sendMessage("Minimum number of stars to add a message to the starboard is now " + min).queue();
+        });
+        registerOption("starboard:blacklist", (thiz, event, args)->{
+            if(args.length < 2 || !(args[0].equals("add") || args[0].equals("remove"))) {
+                thiz.onHelp(event);
+                return;
+            }
+            String mention = args[1].replaceAll("(<@!?)?(\\d+?)(>)?", "$2");
+            long id;
+            try {
+                id = Long.parseLong(mention);
+            } catch(NumberFormatException e) {
+                event.getChannel().sendMessage("`" + args[1] + "` is not a valid mention/user id").queue();
+                return;
+            }
+            GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+            if(data == null) {
+                GabrielData.guilds().get().set(event.getGuild().getId(), data = new GabrielData.GuildData());
+            }
+            TLongSet blacklist = data.starboardBlacklist;
+            if(blacklist == null) {
+                blacklist = data.starboardBlacklist = new TLongHashSet();
+            }
+            if(args[0].equals("add")) {
+                if(blacklist.add(id)) {
+                    event.getChannel().sendMessage("Successfully blacklisted user").queue();
+                } else {
+                    event.getChannel().sendMessage("User already blacklisted").queue();
+                }
+            } else {
+                if(blacklist.remove(id)) {
+                    event.getChannel().sendMessage("Successfully removed user from the blacklist").queue();
+                } else {
+                    event.getChannel().sendMessage("User is not blacklisted").queue();
+                }
+            }
+        });
     }
 
     public static void registerOption(String name, TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]> code) {
@@ -109,7 +169,10 @@ public class OptionsCommand {
                         "`>>opts nsfw toggle`: toggles nsfw on the channel it's run\n" +
                                "`>>opts prefix set <prefix>`: changes the prefix for this guild\n" +
                                "`>>opts starboard enable <channel mention>`: Enables starboard on specified channel\n" +
-                               "`>>opts starboard disable`: Disables starboard"
+                               "`>>opts starboard disable`: Disables starboard\n" +
+                               "`>>opts starboard min <number>`: Sets minimum stars needed to add messages to the starboard\n" +
+                               "`>>opts starboard blacklist add <@mention>`: Blacklists mentioned user from adding messages to the starboard\n" +
+                               "`>>opts starboard blacklist remove <@mention>`: Removes the mentioned user from the starboard blacklist"
                 ))
                 .code((thiz, event, args)->{
                     if(args.length < 2) {

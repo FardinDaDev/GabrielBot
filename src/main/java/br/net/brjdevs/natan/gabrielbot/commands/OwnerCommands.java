@@ -119,6 +119,7 @@ public class OwnerCommands {
                 .description("Puts me to sleep")
                 .help((thiz, event)->thiz.helpEmbed(event, "shutdown", "`>>shutdown`"))
                 .code((event, args)->{
+                    GabrielData.save();
                     event.getChannel().sendMessage("*Goes to sleep...*").complete();
                     Arrays.stream(GabrielBot.getInstance().getShards()).forEach(s->s.getJDA().shutdown(true));
                     System.exit(0);
@@ -214,7 +215,7 @@ public class OwnerCommands {
                 })
                 .code((thiz, event, args)->{
                     if(args.length == 0) {
-                        event.getChannel().sendMessage(thiz.help(event)).queue();
+                        thiz.onHelp(event);
                         return;
                     }
                     Thread thread = new Thread(()->{
@@ -288,8 +289,13 @@ public class OwnerCommands {
                             }
                             event.getChannel().sendMessage("Evaluated successfully:\n\n```\n" + v + "```").queue();
                         } catch(Exception e) {
-                            e.printStackTrace();
-                            event.getChannel().sendMessage("Error executing, check logs").queue();
+                            StringWriter sw = new StringWriter();
+                            PrintWriter pw = new PrintWriter(sw);
+                            e.printStackTrace(pw);
+                            pw.close();
+                            String s = sw.toString();
+                            if(s.length() > 500) s = Utils.paste(s);
+                            event.getChannel().sendMessage("Error executing: ```\n" + s + "```").queue();
                         }
                     }, "EvalThread");
                     thread.setPriority(Thread.MAX_PRIORITY);

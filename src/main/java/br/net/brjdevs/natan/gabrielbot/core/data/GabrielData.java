@@ -11,6 +11,7 @@ import br.net.brjdevs.natan.gabrielbot.utils.data.JedisSerializatorDataManager;
 import br.net.brjdevs.natan.gabrielbot.utils.data.SerializedData;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.pool.KryoPool;
+import gnu.trove.set.TLongSet;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.io.File;
@@ -128,7 +129,7 @@ public final class GabrielData {
         public Set<String> custom = new CopyOnWriteArraySet<>();
     }
 
-    @Version(1)
+    @Version(2)
     public static class GuildData {
         @Since(0)
         public Map<String, CustomCommand> customCommands = new ConcurrentHashMap<>();
@@ -136,6 +137,10 @@ public final class GabrielData {
         public long premiumUntil = 0;
         @Since(1)
         public long starboardChannelId;
+        @Since(2)
+        public int minStars = 1;
+        @Since(2)
+        public TLongSet starboardBlacklist;
     }
 
     @Version(0)

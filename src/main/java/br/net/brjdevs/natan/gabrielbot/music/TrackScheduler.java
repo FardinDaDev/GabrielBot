@@ -52,7 +52,7 @@ public class TrackScheduler extends AudioEventAdapter {
     public void nextTrack() {
         if(tracks.size() == 0) {
             guildMusicPlayer.getTextChannel().sendMessage("Finished playing").queue();
-            GabrielBot.getInstance().removePlayer(guildMusicPlayer.guildId);
+            guildMusicPlayer.leave();
         } else {
             voteskips.clear();
             guildMusicPlayer.player.startTrack((currentTrack = tracks.poll()).track, false);
@@ -100,9 +100,7 @@ public class TrackScheduler extends AudioEventAdapter {
 
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
-        if(endReason.mayStartNext) {
-            nextTrack();
-        }
+        nextTrack();
     }
 
     @Override

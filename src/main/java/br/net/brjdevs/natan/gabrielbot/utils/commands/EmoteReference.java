@@ -69,7 +69,7 @@ public enum EmoteReference {
     BLACK_JOKER(":black_joker:", "\uD83C\uDCCF"),
     HEARTBEAT(":heartbeat:", "\uD83D\uDC93"),
     PING_PONG(":ping_pong:", "\uD83C\uDFD3"),
-    LARS_X_KODE("<:LarsXKode:318193079683121154>", null);
+    LARS_X_KODE("<:LarsXKode:318417004795002880>", null);
 
 
     private final String discordNotation;
