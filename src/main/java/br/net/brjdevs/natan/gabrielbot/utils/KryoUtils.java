@@ -39,11 +39,11 @@ public class KryoUtils {
         return serialize(POOL, obj);
     }
 
-    public static Object unserialize(Kryo kryo, byte[] data) {
+    public static <T> T unserialize(Kryo kryo, byte[] data) {
         Input in = new Input(new ByteArrayInputStream(checkNotNull(data, "data")));
         Object o = checkNotNull(kryo, "kryo").readClassAndObject(in);
         in.close();
-        return o;
+        return (T)o;
     }
 
     public static <T> T unserialize(Kryo kryo, byte[] data, Class<T> clazz) {
@@ -58,7 +58,7 @@ public class KryoUtils {
         return checkNotNull(clazz, "clazz").cast(unserialize(pool, data));
     }
 
-    public static Object unserialize(byte[] data) {
+    public static <T> T unserialize(byte[] data) {
         return POOL.run(kryo -> unserialize(kryo, data));
     }
 

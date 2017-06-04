@@ -1,7 +1,11 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.core.command.*;
+import br.net.brjdevs.natan.gabrielbot.core.command.Command;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
+import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperation;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import br.net.brjdevs.natan.gabrielbot.utils.PrologBuilder;
@@ -19,7 +23,12 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.management.ManagementFactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,7 +54,6 @@ public class MiscCommands {
                             event.getChannel().sendMessage("No command named " + args[0]).queue();
                             return;
                         }
-
                         event.getChannel().sendMessage(cmd.help(event)).queue();
                         return;
                     }

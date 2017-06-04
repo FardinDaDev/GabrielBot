@@ -8,7 +8,12 @@ import br.net.brjdevs.natan.gabrielbot.core.jda.Shard;
 import br.net.brjdevs.natan.gabrielbot.log.DebugPrintStream;
 import br.net.brjdevs.natan.gabrielbot.log.DiscordLogBack;
 import br.net.brjdevs.natan.gabrielbot.music.GuildMusicPlayer;
+import br.net.brjdevs.natan.gabrielbot.music.SerializedPlayer;
+import br.net.brjdevs.natan.gabrielbot.music.SerializedTrack;
+import br.net.brjdevs.natan.gabrielbot.music.Track;
+import br.net.brjdevs.natan.gabrielbot.utils.KryoUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
+import br.net.brjdevs.natan.gabrielbot.utils.data.JedisDataManager;
 import com.mashape.unirest.http.Unirest;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
@@ -27,8 +32,10 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,7 +51,7 @@ public class GabrielBot {
     private final Shard[] shards;
 
     private GabrielBot() throws Throwable {
-        GabrielData.blacklist().run((j)->{
+        GabrielData.blacklist().runNoReply((j)->{
             LOGGER.info("Successfully established connection to database");
         }, (t)->{
             LOGGER.warn("Unable to connect to the database");
@@ -58,7 +65,7 @@ public class GabrielBot {
             try {
                 Runtime.getRuntime().exec(dbstart.getAbsolutePath()).waitFor();
                 Thread.sleep(5000);
-                GabrielData.blacklist().run((j)->{
+                GabrielData.blacklist().runNoReply((j)->{
                     LOGGER.info("Successfully established connection to database");
                 }, (e)->{
                     LOGGER.error("DB not started, exiting", e);
@@ -121,9 +128,33 @@ public class GabrielBot {
             shards[i] = new Shard(config.token, i, shards.length, config.nas);
         }
         DiscordLogBack.enable();
-        playerManager.setItemLoaderThreadPoolSize(40);
+        playerManager.setItemLoaderThreadPoolSize(10);
+
+
         LOGGER.info("Loading done!");
         loaded = true;
+    }
+
+    private void trackSetup() {
+        JedisDataManager manager = GabrielData.guilds();
+        Set<String> keys = manager.keySet("p_*");
+        LOGGER.info("Unserializing music tracks for {} guilds", keys.size());
+        keys.forEach(key->{
+            String value = manager.get(key);
+            manager.remove(key);
+            if(value == null) {
+                LOGGER.error("Null serialized track data on key {}", key);
+                return;
+            }
+            SerializedPlayer serializedPlayer = KryoUtils.unserialize(Base64.getDecoder().decode(value));
+            List<Track> unserialized = Arrays.stream(serializedPlayer.tracks).map(SerializedTrack::toTrack).collect(Collectors.toList());
+            Track playing = unserialized.remove(0);
+            playing.track.setPosition(serializedPlayer.position);
+            GuildMusicPlayer gmp = createPlayer(serializedPlayer.guildId, serializedPlayer.textChannelId, serializedPlayer.voiceChannelId);
+            gmp.getGuild().getAudioManager().openAudioConnection(gmp.getVoiceChannel());
+            gmp.scheduler.fromSerialized(playing, unserialized);
+            gmp.getTextChannel().sendMessage("Successfully resumed music").queue();
+        });
     }
 
     public static boolean isLoaded() {
@@ -241,7 +272,13 @@ public class GabrielBot {
                 LoggerFactory.getLogger(log.name).error("Failure", err);
             }
         });
-        instance = new GabrielBot();
+        try {
+            instance = new GabrielBot();
+            instance.trackSetup();
+        } catch(Throwable t) {
+            LOGGER.error("Error during startup", t);
+            System.exit(-1);
+        }
     }
 
     public static GabrielBot getInstance() {

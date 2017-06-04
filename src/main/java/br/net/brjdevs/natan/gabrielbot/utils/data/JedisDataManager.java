@@ -14,17 +14,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class JedisDataManager extends AbstractMap<String, String> {
     private static Map<String, JedisPool> pools = new ConcurrentHashMap<>();
 
-    private final JedisPool pool;
-    private final String prefix;
-    private volatile Set<Entry<String, String>> set;
+    protected final JedisPool pool;
+    protected final String prefix;
+    protected final String escapedPrefix;
+    protected volatile Set<Entry<String, String>> set;
 
     public JedisDataManager(JedisPool pool, String prefix) {
         this.pool = Preconditions.checkNotNull(pool, "pool");
         this.prefix = prefix == null ? "" : prefix;
+        this.escapedPrefix = prefix.replace("*", "\\*").replace("?", "\\?").replace("[", "\\[").replace("]", "\\]").replace("^", "\\^").replace("-", "\\-");
     }
 
     public JedisDataManager(String host, int port, String prefix) {
@@ -36,7 +40,7 @@ public class JedisDataManager extends AbstractMap<String, String> {
     }
 
     public void set(String key, String value) {
-        run((Consumer<Jedis>)j->j.set(prefix + key, value));
+        runNoReply(j->j.set(prefix + key, value));
     }
 
     public String get(String key) {
@@ -44,7 +48,20 @@ public class JedisDataManager extends AbstractMap<String, String> {
     }
 
     public void remove(String key) {
-        run((Consumer<Jedis>)j->j.del(prefix + key));
+        runNoReply(j->j.del(prefix + key));
+    }
+
+    public Stream<String> keys(String pattern) {
+        return run(j->j.keys(escapedPrefix + pattern)).stream().map(key->key.substring(prefix.length()));
+    }
+
+    public Set<String> keySet(String pattern) {
+        return keys(pattern).collect(Collectors.toSet());
+    }
+
+    @Override
+    public String remove(Object key) {
+        return run(j->String.valueOf(j.del((String)key)));
     }
 
     public JedisPool getPool() {
@@ -65,11 +82,11 @@ public class JedisDataManager extends AbstractMap<String, String> {
         }
     }
 
-    public <T> T run (Function<Jedis, T> function) {
+    public <T> T run(Function<Jedis, T> function) {
         return run(function, null);
     }
 
-    public void run(Consumer<Jedis> consumer, Consumer<Throwable> fail) {
+    public void runNoReply(Consumer<Jedis> consumer, Consumer<Throwable> fail) {
         run(j->{
             consumer.accept(j);
             return null;
@@ -79,8 +96,8 @@ public class JedisDataManager extends AbstractMap<String, String> {
         });
     }
 
-    public void run(Consumer<Jedis> consumer) {
-        run(consumer, null);
+    public void runNoReply(Consumer<Jedis> consumer) {
+        runNoReply(consumer, null);
     }
 
     @Override
@@ -93,7 +110,7 @@ public class JedisDataManager extends AbstractMap<String, String> {
                         @Override
                         @Nonnull
                         public Iterator<Entry<String, String>> iterator() {
-                            Iterator<String> keys = run(j->{return j.keys("*");}).iterator();
+                            Iterator<String> keys = run(j->j.keys("*")).iterator();
                             return new Iterator<Entry<String, String>>() {
                                 @Override
                                 public boolean hasNext() {
@@ -104,8 +121,14 @@ public class JedisDataManager extends AbstractMap<String, String> {
                                 public Entry<String, String> next() {
                                     String s = keys.next();
                                     return new LazyLoadingMapEntry(s,
-                                            ()->run(j->{return j.get(s);}),
-                                            (v)->run(j->{if(v == null) {j.del(s);} else {j.set(s, v);}})
+                                            ()->run(j->j.get(s)),
+                                            (v)->runNoReply(j->{
+                                                if(v == null) {
+                                                    j.del(s);
+                                                } else {
+                                                    j.set(s, v);
+                                                }
+                                            })
                                     );
                                 }
                             };

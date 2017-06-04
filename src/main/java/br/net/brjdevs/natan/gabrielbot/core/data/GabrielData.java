@@ -5,10 +5,9 @@ import br.net.brjdevs.natan.gabrielbot.core.data.serializers.Since;
 import br.net.brjdevs.natan.gabrielbot.core.data.serializers.Version;
 import br.net.brjdevs.natan.gabrielbot.core.data.serializers.VersionSerializer;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
-import br.net.brjdevs.natan.gabrielbot.utils.data.DataManager;
 import br.net.brjdevs.natan.gabrielbot.utils.data.JedisDataManager;
 import br.net.brjdevs.natan.gabrielbot.utils.data.JedisSerializatorDataManager;
-import br.net.brjdevs.natan.gabrielbot.utils.data.SerializedData;
+import br.net.brjdevs.natan.gabrielbot.utils.starboard.StarboardDataManager;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import gnu.trove.set.TLongSet;
@@ -21,7 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public final class GabrielData {
     public static final VersionSerializer<GuildData> GUILD_SERIALIZER = new VersionSerializer<>(GuildData.class);
@@ -42,16 +41,17 @@ public final class GabrielData {
         return k;
     }).build();
 
-    private static DataManager<SerializedData<ChannelData>> channels;
-    private static DataManager<SerializedData<GuildData>> guilds;
-    private static DataManager<SerializedData<GuildCommandData>> guildCommands;
-    private static DataManager<SerializedData<UserData>> users;
+    private static JedisSerializatorDataManager<ChannelData> channels;
+    private static JedisSerializatorDataManager<GuildData> guilds;
+    private static JedisSerializatorDataManager<GuildCommandData> guildCommands;
+    private static JedisSerializatorDataManager<UserData> users;
+    private static StarboardDataManager starboards;
     private static JedisDataManager blacklist;
     private static Config config;
 
     private GabrielData(){}
 
-    public static DataManager<SerializedData<ChannelData>> channels() {
+    public static JedisSerializatorDataManager<ChannelData> channels() {
         if(channels == null) {
             Config.DBInfo info = config().dbs.get("main");
             if(info == null) throw new UnsupportedOperationException("No db info specified in config file");
@@ -60,7 +60,7 @@ public final class GabrielData {
         return channels;
     }
 
-    public static DataManager<SerializedData<GuildData>> guilds() {
+    public static JedisSerializatorDataManager<GuildData> guilds() {
         if(guilds == null) {
             Config.DBInfo info = config().dbs.get("main");
             if(info == null) throw new UnsupportedOperationException("No db info specified in config file");
@@ -69,8 +69,8 @@ public final class GabrielData {
         return guilds;
     }
 
-    public static DataManager<SerializedData<GuildCommandData>> guildCommands() {
-        if(guilds == null) {
+    public static JedisSerializatorDataManager<GuildCommandData> guildCommands() {
+        if(guildCommands == null) {
             Config.DBInfo info = config().dbs.get("main");
             if(info == null) throw new UnsupportedOperationException("No db info specified in config file");
             guildCommands = new JedisSerializatorDataManager<>(info.host, info.port, "guildccs:", POOL, 100, 5, MINUTES);
@@ -78,13 +78,22 @@ public final class GabrielData {
         return guildCommands;
     }
 
-    public static DataManager<SerializedData<UserData>> users() {
+    public static JedisSerializatorDataManager<UserData> users() {
         if(users == null) {
             Config.DBInfo info = config().dbs.get("main");
             if(info == null) throw new UnsupportedOperationException("No db info specified in config file");
             users = new JedisSerializatorDataManager<>(info.host, info.port, "user:", POOL, 1000, 20, MINUTES);
         }
         return users;
+    }
+
+    public static StarboardDataManager starboards() {
+        if(starboards == null) {
+            Config.DBInfo info = config().dbs.get("main");
+            if(info == null) throw new UnsupportedOperationException("No db info specified in config file");
+            starboards = new StarboardDataManager(info.host, info.port, "starboard:");
+        }
+        return starboards;
     }
 
     public static JedisDataManager blacklist() {
@@ -113,6 +122,7 @@ public final class GabrielData {
         if(blacklist != null) blacklist.save();
         if(users != null) users.save();
         if(guildCommands != null) guildCommands.save();
+        if(starboards != null) starboards.save();
     }
 
     @Version(0)
@@ -129,7 +139,7 @@ public final class GabrielData {
         public Set<String> custom = new CopyOnWriteArraySet<>();
     }
 
-    @Version(2)
+    @Version(3)
     public static class GuildData {
         @Since(0)
         public Map<String, CustomCommand> customCommands = new ConcurrentHashMap<>();
@@ -141,6 +151,8 @@ public final class GabrielData {
         public int minStars = 1;
         @Since(2)
         public TLongSet starboardBlacklist;
+        @Since(3)
+        public long maxStarboardMessageAgeMillis;
     }
 
     @Version(0)

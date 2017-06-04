@@ -1,7 +1,11 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.com.brjdevs.java.utils.functions.TriConsumer;
-import br.net.brjdevs.natan.gabrielbot.core.command.*;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
+import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import com.google.common.base.Preconditions;
 import gnu.trove.set.TLongSet;
@@ -54,7 +58,7 @@ public class OptionsCommand {
             try {
                 id = Long.parseLong(channel);
             } catch(NumberFormatException e) {
-                event.getChannel().sendMessage("Invalid number: `" + args[0] + "`").queue();
+                event.getChannel().sendMessage("`" + args[0] + "` is not a valid number").queue();
                 return;
             }
             TextChannel tc = event.getGuild().getTextChannelById(id);
@@ -146,6 +150,34 @@ public class OptionsCommand {
                 }
             }
         });
+        registerOption("starboard:maxage", (thiz, event, args)->{
+            if(args.length == 0) {
+                thiz.onHelp(event);
+                return;
+            }
+            long age;
+            try {
+                age = Integer.parseInt(args[0]);
+            } catch(NumberFormatException e) {
+                event.getChannel().sendMessage("`" + args[0] + "` is not a valid number").queue();
+                return;
+            }
+            if(age < 0) {
+                event.getChannel().sendMessage("Age must be positive").queue();
+                return;
+            }
+            GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
+            if(age == 0) {
+                if(data != null) data.maxStarboardMessageAgeMillis = 0;
+                event.getChannel().sendMessage("Removed starboard max age").queue();
+                return;
+            }
+            if(data == null) {
+                GabrielData.guilds().get().set(event.getGuild().getId(), data = new GabrielData.GuildData());
+            }
+            data.maxStarboardMessageAgeMillis = age*1000;
+            event.getChannel().sendMessage("Messages older than " + age + " seconds won't be added to the starboard anymore").queue();
+        });
     }
 
     public static void registerOption(String name, TriConsumer<SimpleCommand, GuildMessageReceivedEvent, String[]> code) {
@@ -172,7 +204,8 @@ public class OptionsCommand {
                                "`>>opts starboard disable`: Disables starboard\n" +
                                "`>>opts starboard min <number>`: Sets minimum stars needed to add messages to the starboard\n" +
                                "`>>opts starboard blacklist add <@mention>`: Blacklists mentioned user from adding messages to the starboard\n" +
-                               "`>>opts starboard blacklist remove <@mention>`: Removes the mentioned user from the starboard blacklist"
+                               "`>>opts starboard blacklist remove <@mention>`: Removes the mentioned user from the starboard blacklist\n" +
+                               "`>>opts starboard maxage <seconds>`: Messages older than the specified time won't be added to the starboard"
                 ))
                 .code((thiz, event, args)->{
                     if(args.length < 2) {

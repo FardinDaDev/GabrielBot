@@ -32,6 +32,7 @@ public interface SimpleCommand extends Command {
         String p = permission().name().toLowerCase();
         String perm = Character.toUpperCase(p.charAt(0)) + p.substring(1);
         return new EmbedBuilder()
+                .setColor(event.getMember().getColor())
                 .setTitle(cmdname, null)
                 .setDescription("\u200B")
                 .addField("Permission required", perm, false)

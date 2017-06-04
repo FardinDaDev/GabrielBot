@@ -1,19 +1,38 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.core.command.*;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
+import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
+import br.net.brjdevs.natan.gabrielbot.music.SerializedPlayer;
+import br.net.brjdevs.natan.gabrielbot.music.SerializedTrack;
+import br.net.brjdevs.natan.gabrielbot.music.Track;
 import br.net.brjdevs.natan.gabrielbot.utils.DumpUtils;
+import br.net.brjdevs.natan.gabrielbot.utils.KryoUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.Utils;
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
-
+import br.net.brjdevs.natan.gabrielbot.utils.data.JedisDataManager;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
-import java.io.*;
+import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RegisterCommand.Class
 public class OwnerCommands {
@@ -117,8 +136,26 @@ public class OwnerCommands {
     public static void shutdown(CommandRegistry cr) {
         cr.register("shutdown", SimpleCommand.builder(CommandCategory.OWNER)
                 .description("Puts me to sleep")
-                .help((thiz, event)->thiz.helpEmbed(event, "shutdown", "`>>shutdown`"))
+                .help((thiz, event)->thiz.helpEmbed(event, "shutdown", "`>>shutdown`\n`>>shutdown savemusic`"))
                 .code((event, args)->{
+                    if(args.length > 0 && args[0].equals("savemusic")) {
+                        GabrielBot.getInstance().registry.commands().remove("play");
+                        JedisDataManager jdm = (JedisDataManager)GabrielData.guilds();
+                        int[] i = new int[1];
+                        GabrielBot.getInstance().streamPlayers().forEach(p->{
+                            p.player.setPaused(true);
+                            List<Track> allTracks = new ArrayList<>();
+                            allTracks.add(p.scheduler.currentTrack());
+                            allTracks.addAll(p.scheduler.tracks());
+                            p.leave();
+                            p.getTextChannel().sendMessage("I'll be rebooting soon, but your queue has been saved and will be restored after I reboot").queue();
+                            SerializedPlayer sp = new SerializedPlayer(allTracks.stream().map(SerializedTrack::new).collect(Collectors.toList()), allTracks.get(0).track.getPosition(), p.guildId, p.textChannelId, p.voiceChannelId);
+                            jdm.set("p_" + p.guildId, Base64.getEncoder().encodeToString(KryoUtils.serialize(sp)));
+                            i[0]++;
+                        });
+                        jdm.save();
+                        GabrielBot.LOGGER.info("Serialized tracks for {} guilds", i[0]);
+                    }
                     GabrielData.save();
                     event.getChannel().sendMessage("*Goes to sleep...*").complete();
                     Arrays.stream(GabrielBot.getInstance().getShards()).forEach(s->s.getJDA().shutdown(true));

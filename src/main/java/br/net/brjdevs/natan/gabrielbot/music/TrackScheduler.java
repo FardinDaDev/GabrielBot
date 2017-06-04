@@ -1,20 +1,19 @@
 package br.net.brjdevs.natan.gabrielbot.music;
 
-import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
-import net.dv8tion.jda.core.entities.Guild;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TrackScheduler extends AudioEventAdapter {
@@ -23,9 +22,9 @@ public class TrackScheduler extends AudioEventAdapter {
 
     private final ConcurrentLinkedQueue<Track> tracks = new ConcurrentLinkedQueue<>();
     private final GuildMusicPlayer guildMusicPlayer;
-    private final TLongList voteskips = new TLongArrayList();
+    private final TLongSet voteskips = new TLongHashSet();
     private long playingMessageId;
-    private Track currentTrack;
+    private volatile Track currentTrack;
 
     TrackScheduler(GuildMusicPlayer player) {
         this.guildMusicPlayer = player;
@@ -33,7 +32,6 @@ public class TrackScheduler extends AudioEventAdapter {
 
     public void voteskip(long userId) {
         TextChannel tc = guildMusicPlayer.getTextChannel();
-        Guild guild = tc.getGuild();
         int votes = getRequiredVotes(guildMusicPlayer.getVoiceChannel());
         if(voteskips.contains(userId)) {
             voteskips.remove(userId);
@@ -60,15 +58,11 @@ public class TrackScheduler extends AudioEventAdapter {
     }
 
     public void queueTrack(AudioTrack track, User user) {
-        if(tracks.size() > MAX_QUEUE_SIZE) {
-            return;
-        }
         if(currentTrack == null) {
             currentTrack = new Track(track, user.getIdLong());
             guildMusicPlayer.player.startTrack(track, false);
-        }
-        else {
-            tracks.add(new Track(track, user.getIdLong()));
+        } else {
+            tracks.offer(new Track(track, user.getIdLong()));
         }
     }
 
@@ -78,6 +72,12 @@ public class TrackScheduler extends AudioEventAdapter {
 
     public Track currentTrack() {
         return currentTrack;
+    }
+
+    public void fromSerialized(Track current, List<Track> queue) {
+        currentTrack = current;
+        guildMusicPlayer.player.startTrack(current.track, false);
+        tracks.addAll(queue);
     }
 
     private void deletePlayingMessage() {
@@ -100,7 +100,9 @@ public class TrackScheduler extends AudioEventAdapter {
 
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
-        nextTrack();
+        if(endReason.mayStartNext) {
+            nextTrack();
+        }
     }
 
     @Override

@@ -1,10 +1,14 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
-import br.net.brjdevs.natan.gabrielbot.core.command.*;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
+import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.utils.PermissionUtil;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -41,12 +45,12 @@ public class PruneCommand {
                     try {
                         messages = Integer.parseInt(args[0]);
                     } catch(NumberFormatException e) {
-                        event.getChannel().sendMessage(thiz.help(event)).queue();
+                        event.getChannel().sendMessage("`" + args[0] + "` is not a valid integer").queue();
                         return;
                     }
 
                     if(messages < 2 || messages > 1000) {
-                        event.getChannel().sendMessage(thiz.help(event)).queue();
+                        thiz.onHelp(event);
                         return;
                     }
 
@@ -76,9 +80,10 @@ public class PruneCommand {
                     }
 
                     int deleted = 0;
+                    OffsetDateTime twoWeeksAgo = OffsetDateTime.now().minusWeeks(2).minusSeconds(20);
                     while(messages > 0) {
                         List<Message> toDelete = event.getChannel().getHistory().retrievePast(Math.min(100, messages)).complete()
-                                .stream().filter(filter).collect(Collectors.toList());
+                                .stream().filter(m->m.getCreationTime().isAfter(twoWeeksAgo) && filter.test(m)).collect(Collectors.toList());
                         deleted += toDelete.size();
                         switch(toDelete.size()){
                             case 0:

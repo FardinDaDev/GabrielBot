@@ -3,7 +3,6 @@ package br.net.brjdevs.natan.gabrielbot.commands.custom;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.impl.MessageEmbedImpl;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -108,7 +107,7 @@ public class EmbedCustomCommand extends CustomCommand {
                             c = event.getMember().getColor();
                         } else if (v.matches("(#|0x)?[0123456789abcdef]{1,6}")) {
                             try {
-                                c = Color.decode(v.startsWith("0x") ? v : "0x" + v);
+                                c = Color.decode(v.startsWith("0x") || v.startsWith("#") ? v : "0x" + v);
                             } catch (Exception ignored2) {}
                         }
                     }
