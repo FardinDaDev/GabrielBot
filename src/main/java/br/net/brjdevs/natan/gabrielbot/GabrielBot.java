@@ -1,7 +1,6 @@
 package br.net.brjdevs.natan.gabrielbot;
 
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
-import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
 import br.net.brjdevs.natan.gabrielbot.core.data.Config;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.core.jda.Shard;
@@ -12,7 +11,6 @@ import br.net.brjdevs.natan.gabrielbot.music.SerializedPlayer;
 import br.net.brjdevs.natan.gabrielbot.music.SerializedTrack;
 import br.net.brjdevs.natan.gabrielbot.music.Track;
 import br.net.brjdevs.natan.gabrielbot.utils.KryoUtils;
-import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.data.JedisDataManager;
 import com.mashape.unirest.http.Unirest;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
@@ -24,17 +22,15 @@ import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.utils.SimpleLog;
 import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,27 +75,12 @@ public class GabrielBot {
 
         AudioSourceManagers.registerRemoteSources(playerManager);
 
-        Reflections r = new Reflections("br.net.brjdevs.natan.gabrielbot.commands");
+        Reflections r = new Reflections("br.net.brjdevs.natan.gabrielbot.commands", new SubTypesScanner(false));
 
-        registry = new CommandRegistry();
+        registry = new CommandRegistry(GabrielBot.class.getClassLoader());
         long l = System.nanoTime();
-        for(Class<?> cls : r.getTypesAnnotatedWith(RegisterCommand.Class.class)) {
-            Object instance = null;
-            UnsafeUtils.initializeClass(cls);
-            for(Method m : cls.getMethods()) {
-                if(m.getAnnotation(RegisterCommand.class) == null) continue;
-                if(Modifier.isStatic(m.getModifiers())) {
-                    m.invoke(null, registry);
-                } else {
-                    if(instance == null) try {
-                        instance = m.getDeclaringClass().newInstance();
-                    } catch(Exception e) {
-                        LOGGER.error("Error instantiating a command class", e);
-                        continue;
-                    }
-                    m.invoke(instance, registry);
-                }
-            }
+        for(String name : r.getAllTypes()) {
+            registry.register(Class.forName(name));
         }
         long ll = System.nanoTime()-l;
         LOGGER.info("Registered {} commands in {} ns ({} ms)", registry.commands().size(), ll, ll/1_000_000);
@@ -181,6 +162,10 @@ public class GabrielBot {
         return shards[calculateShardId(guildId)].removePlayer(guildId);
     }
 
+    public GuildMusicPlayer interruptPlayer(long guildId) {
+        return shards[calculateShardId(guildId)].interruptPlayer(guildId);
+    }
+
     public List<GuildMusicPlayer> players() {
         return streamPlayers().collect(Collectors.toList());
     }
@@ -194,35 +179,63 @@ public class GabrielBot {
     }
 
     public User getUserById(long id) {
-        return Arrays.stream(shards).map(s->s.getJDA().getUserById(id)).filter(Objects::nonNull).findFirst().orElse(null);
+        for(Shard s : shards) {
+            User u = s.getJDA().getUserById(id);
+            if(u != null) return u;
+        }
+        return null;
+    }
+
+    public Stream<User> streamUsers() {
+        return Arrays.stream(shards).flatMap(s->s.getJDA().getUsers().stream()).distinct();
     }
 
     public List<User> getUsers() {
-        return Arrays.stream(shards).flatMap(s->s.getJDA().getUsers().stream()).distinct().collect(Collectors.toList());
+        return streamUsers().collect(Collectors.toList());
     }
 
     public TextChannel getTextChannelById(long id) {
-        return Arrays.stream(shards).map(s->s.getJDA().getTextChannelById(id)).filter(Objects::nonNull).findFirst().orElse(null);
+        for(Shard s : shards) {
+            TextChannel tc = s.getJDA().getTextChannelById(id);
+            if(tc != null) return tc;
+        }
+        return null;
+    }
+
+    public Stream<TextChannel> streamTextChannels() {
+        return Arrays.stream(shards).flatMap(s->s.getJDA().getTextChannels().stream());
     }
 
     public List<TextChannel> getTextChannels() {
-        return Arrays.stream(shards).flatMap(s->s.getJDA().getTextChannels().stream()).collect(Collectors.toList());
+        return streamTextChannels().collect(Collectors.toList());
     }
 
     public VoiceChannel getVoiceChannelById(long id) {
-        return Arrays.stream(shards).map(s->s.getJDA().getVoiceChannelById(id)).filter(Objects::nonNull).findFirst().orElse(null);
+        for(Shard s : shards) {
+            VoiceChannel vc = s.getJDA().getVoiceChannelById(id);
+            if(vc != null) return vc;
+        }
+        return null;
+    }
+
+    public Stream<VoiceChannel> streamVoiceChannels() {
+        return Arrays.stream(shards).flatMap(s->s.getJDA().getVoiceChannels().stream());
     }
 
     public List<VoiceChannel> getVoiceChannels() {
-        return Arrays.stream(shards).flatMap(s->s.getJDA().getVoiceChannels().stream()).collect(Collectors.toList());
+        return streamVoiceChannels().collect(Collectors.toList());
     }
 
     public Guild getGuildById(long id) {
         return shards[calculateShardId(id)].getJDA().getGuildById(id);
     }
 
+    public Stream<Guild> streamGuilds() {
+        return Arrays.stream(shards).flatMap(s->s.getJDA().getGuilds().stream());
+    }
+
     public List<Guild> getGuilds() {
-        return Arrays.stream(shards).flatMap(s->s.getJDA().getGuilds().stream()).collect(Collectors.toList());
+        return streamGuilds().collect(Collectors.toList());
     }
 
     public void log(String s) {

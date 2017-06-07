@@ -21,11 +21,11 @@ public class EmbedCustomCommand extends CustomCommand {
     private transient volatile JSONObject jsonObj;
 
     static {
-        for(Field f : Color.class.getFields()) {
-            if(!Modifier.isStatic(f.getModifiers()) || f.getType() != Color.class) continue;
+        for (Field f : Color.class.getFields()) {
+            if (!Modifier.isStatic(f.getModifiers()) || f.getType() != Color.class) continue;
             try {
-                COLORS.put(f.getName(), (Color)f.get(null));
-            } catch(IllegalAccessException e) {
+                COLORS.put(f.getName(), (Color) f.get(null));
+            } catch (IllegalAccessException e) {
                 throw new ExceptionInInitializerError(e);
             }
         }
@@ -34,7 +34,7 @@ public class EmbedCustomCommand extends CustomCommand {
     public EmbedCustomCommand(String json) {
         try {
             jsonObj = new JSONObject(json);
-        } catch(JSONException e) {
+        } catch (JSONException e) {
             json = "{" + json + "}";
             jsonObj = new JSONObject(json);
         }
@@ -43,9 +43,9 @@ public class EmbedCustomCommand extends CustomCommand {
 
     @Override
     public String process(GuildMessageReceivedEvent event, String input, Map<String, String> mappings) {
-        if(jsonObj == null) {
-            synchronized(this) {
-                if(jsonObj == null) {
+        if (jsonObj == null) {
+            synchronized (this) {
+                if (jsonObj == null) {
                     jsonObj = new JSONObject(json);
                 }
             }
@@ -54,9 +54,9 @@ public class EmbedCustomCommand extends CustomCommand {
         MessageEmbed.Footer[] footer = {new MessageEmbed.Footer("", null, null)};
         MessageEmbed.AuthorInfo[] author = {new MessageEmbed.AuthorInfo("", null, null, null)};
         List<MessageEmbed.Field> fields = new LinkedList<>();
-        jsonObj.toMap().forEach((key, value)->{
+        jsonObj.toMap().forEach((key, value) -> {
             String v = map(String.valueOf(value), mappings);
-            switch(key.toLowerCase()) {
+            switch (key.toLowerCase()) {
                 case "title":
                     embed.setTitle(v);
                     break;
@@ -67,11 +67,11 @@ public class EmbedCustomCommand extends CustomCommand {
                     embed.setDescription(v);
                     break;
                 case "fields":
-                    if(value instanceof Iterable) {
-                        for(Object o : ((Iterable<?>) value)) {
-                            if(o instanceof Map) {
-                                Map<?,?> j = (Map<?,?>)o;
-                                boolean inline = j.containsKey("inline") && j.get("inline") instanceof Boolean && (Boolean)j.get("inline");
+                    if (value instanceof Iterable) {
+                        for (Object o : ((Iterable<?>) value)) {
+                            if (o instanceof Map) {
+                                Map<?, ?> j = (Map<?, ?>) o;
+                                boolean inline = j.containsKey("inline") && j.get("inline") instanceof Boolean && (Boolean) j.get("inline");
                                 String name = j.containsKey("name") ? String.valueOf(j.get("name")) : "\u200E";
                                 String va = j.containsKey("value") ? String.valueOf(j.get("value")) : "\u200E";
                                 fields.add(new MessageEmbed.Field(name, va, inline));
@@ -102,13 +102,14 @@ public class EmbedCustomCommand extends CustomCommand {
                     break;
                 case "color":
                     Color c = COLORS.get(v);
-                    if(c == null) {
+                    if (c == null) {
                         if (v.equals("member")) {
                             c = event.getMember().getColor();
                         } else if (v.matches("(#|0x)?[0123456789abcdef]{1,6}")) {
                             try {
                                 c = Color.decode(v.startsWith("0x") || v.startsWith("#") ? v : "0x" + v);
-                            } catch (Exception ignored2) {}
+                            } catch (Exception ignored2) {
+                            }
                         }
                     }
                     embed.setColor(c);

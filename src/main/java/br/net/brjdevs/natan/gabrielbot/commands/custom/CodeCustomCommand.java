@@ -3,15 +3,15 @@ package br.net.brjdevs.natan.gabrielbot.commands.custom;
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
 import br.net.brjdevs.natan.gabrielbot.commands.fun.BrainfuckInterpreter;
 import br.net.brjdevs.natan.gabrielbot.commands.fun.Jokes;
-import br.net.brjdevs.natan.gabrielbot.utils.StringUtils;
-import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import br.net.brjdevs.natan.gabrielbot.lang.common.Opcodes;
 import br.net.brjdevs.natan.gabrielbot.lang.compiler.Parser;
 import br.net.brjdevs.natan.gabrielbot.lang.runtime.Array;
 import br.net.brjdevs.natan.gabrielbot.lang.runtime.Interpreter;
 import br.net.brjdevs.natan.gabrielbot.lang.runtime.Verifier;
-import br.net.brjdevs.natan.gabrielbot.lang.runtime.opcodes.InvokeStaticImpl;
 import br.net.brjdevs.natan.gabrielbot.lang.runtime.invoke.Method;
+import br.net.brjdevs.natan.gabrielbot.lang.runtime.opcodes.InvokeStaticImpl;
+import br.net.brjdevs.natan.gabrielbot.utils.StringUtils;
+import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.io.UnsupportedEncodingException;
@@ -28,10 +28,9 @@ public class CodeCustomCommand extends CustomCommand {
         Method.register("brainfuck", new Method() {
             @Override
             public Object run(Interpreter interpreter, Object instance, Object... args) {
-                return new BrainfuckInterpreter(5000, 1<<12).process(
+                return new BrainfuckInterpreter(5000, 1 << 12).process(
                         String.valueOf(args[0]).toCharArray(),
-                        String.valueOf(args[1]),
-                        null
+                        String.valueOf(args[1])
                 );
             }
 
@@ -64,7 +63,7 @@ public class CodeCustomCommand extends CustomCommand {
         Method.register("join", new Method() {
             @Override
             public Object run(Interpreter interpreter, Object instance, Object... args) {
-                return ((Array)args[0]).stream().map(String::valueOf).collect(Collectors.joining(" "));
+                return ((Array) args[0]).stream().map(String::valueOf).collect(Collectors.joining(" "));
             }
 
             @Override
@@ -82,7 +81,7 @@ public class CodeCustomCommand extends CustomCommand {
             public Object run(Interpreter interpreter, Object instance, Object... args) {
                 try {
                     return URLEncoder.encode(String.valueOf(args[0]), "UTF-8");
-                } catch(UnsupportedEncodingException e) {
+                } catch (UnsupportedEncodingException e) {
                     UnsafeUtils.throwException(e);
                     throw new AssertionError();
                 }
@@ -117,9 +116,9 @@ public class CodeCustomCommand extends CustomCommand {
         Method.register("range", new Method() {
             @Override
             public Object run(Interpreter interpreter, Object instance, Object... args) {
-                int i1 = ((Number)args[0]).intValue();
-                int i2 = ((Number)args[1]).intValue();
-                if(i2 > i1) {
+                int i1 = ((Number) args[0]).intValue();
+                int i2 = ((Number) args[1]).intValue();
+                if (i2 > i1) {
                     i1 = i1 ^ i2;
                     i2 = i1 ^ i2;
                     i1 = i1 ^ i2;
@@ -140,7 +139,7 @@ public class CodeCustomCommand extends CustomCommand {
         Method.register("random", new Method() {
             @Override
             public Object run(Interpreter interpreter, Object instance, Object... args) {
-                Array a = (Array)args[0];
+                Array a = (Array) args[0];
                 return a.getAtIndex(ThreadLocalRandom.current().nextInt() % a.size()); //gets an existing index for sparse arrays
             }
 
@@ -167,7 +166,7 @@ public class CodeCustomCommand extends CustomCommand {
         Interpreter interpreter = new Interpreter(bytecode, StringUtils.advancedSplitArgs(input, 0), debugFlags);
         interpreter.globals.putAll(mappings);
         StringBuilder sb = new StringBuilder();
-        ((InvokeStaticImpl)interpreter.getOpcodeImplementationByOpcode(Opcodes.INVOKESTATIC)).register("println", new Method() {
+        ((InvokeStaticImpl) interpreter.getOpcodeImplementationByOpcode(Opcodes.INVOKESTATIC)).register("println", new Method() {
             @Override
             public Object run(Interpreter interpreter, Object instance, Object... args) {
                 sb.append(args[0]).append('\n');
@@ -186,7 +185,7 @@ public class CodeCustomCommand extends CustomCommand {
         });
         try {
             interpreter.run();
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             return "Error processing: " + t;
         }
         return sb.toString();
@@ -200,25 +199,25 @@ public class CodeCustomCommand extends CustomCommand {
     public static CodeCustomCommand of(GuildMessageReceivedEvent event, String text) {
         text =
                 extern("println", 1) +
-                extern("brainfuck", 2) +
-                extern("joke", 0) +
-                extern("join", 1) +
-                extern("url", 1) +
-                extern("replace", 3) +
-                extern("range", 2) +
-                extern("random", 1) +
-                text;
+                        extern("brainfuck", 2) +
+                        extern("joke", 0) +
+                        extern("join", 1) +
+                        extern("url", 1) +
+                        extern("replace", 3) +
+                        extern("range", 2) +
+                        extern("random", 1) +
+                        text;
         try {
             byte[] bytes = Parser.parse(text);
             Verifier.verify(bytes);
             return new CodeCustomCommand(bytes);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             event.getChannel().sendMessage("Error compiling: " + t.getMessage()).queue();
             return null;
         }
     }
 
     private static String extern(String name, int args) {
-        return "extern func " + name + "(" + IntStream.range(0, args).mapToObj(i->"arg"+i).collect(Collectors.joining(",")) + "); ";
+        return "extern func " + name + "(" + IntStream.range(0, args).mapToObj(i -> "arg" + i).collect(Collectors.joining(",")) + "); ";
     }
 }

@@ -22,8 +22,8 @@ public enum CommandPermission {
             GabrielData.GuildData guild = GabrielData.guilds().get().get(member.getGuild().getId());
             return
                     (user != null && user.premiumUntil > now) ||
-                    (guild != null && guild.premiumUntil > now) ||
-                    OWNER.test(member);
+                            (guild != null && guild.premiumUntil > now) ||
+                            OWNER.test(member);
         }
     },
     LARS() {

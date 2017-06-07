@@ -1,7 +1,5 @@
 package br.net.brjdevs.natan.gabrielbot.commands.fun;
 
-import net.dv8tion.jda.core.entities.Guild;
-
 import java.nio.ByteBuffer;
 
 public class BrainfuckInterpreter {
@@ -13,7 +11,7 @@ public class BrainfuckInterpreter {
         this.memory = memory;
     }
 
-    public String process(char[] code, String input, Guild guild) {
+    public String process(char[] code, String input) {
         ByteBuffer bytes = ByteBuffer.allocateDirect(memory);
         int data = 0;
         char[] inChars = input.toCharArray();
@@ -33,7 +31,7 @@ public class BrainfuckInterpreter {
                         break;
                     case '<':
                         --data;
-                        if(data < 0){
+                        if (data < 0) {
                             throw new BrainfuckException("Data pointer out of bounds");
                         }
                         break;
@@ -81,7 +79,7 @@ public class BrainfuckInterpreter {
                         break;
                 }
             }
-        } catch(IndexOutOfBoundsException e) {
+        } catch (IndexOutOfBoundsException e) {
             throw new BrainfuckException("Data pointer out of bounds");
         }
         return output.toString();
@@ -90,10 +88,6 @@ public class BrainfuckInterpreter {
     public static class BrainfuckException extends RuntimeException {
         public BrainfuckException(String s) {
             super(s, null, false, false);
-        }
-
-        public BrainfuckException(String s, Throwable t) {
-            super(s, t, false, false);
         }
     }
 }

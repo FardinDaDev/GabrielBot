@@ -14,7 +14,7 @@ public class Jokes {
             }
 
             String joke = object.getJSONObject("value").getString("joke").replace("&quot;", "\"");
-            if(user == null || user.equals("Chuck Norris")) return joke;
+            if (user == null || user.equals("Chuck Norris")) return joke;
             return joke.replace("Chuck Norris", user);
         } catch (UnirestException ex) {
             return "Unable to get joke :(";

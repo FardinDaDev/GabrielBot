@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
@@ -45,5 +47,17 @@ public class Utils {
         return (hours == 0 ? "" : hours + ":") +
                 (minutes == 0 ? "" : minutes + ":") +
                 (seconds == 0 ? "" : seconds + "").replaceAll(":$", "");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <K,V> Map<K,V> map(Object... mappings) {
+        if(mappings.length % 2 == 1) throw new IllegalArgumentException("mappings.length must be even");
+        Map<K, V> map = new HashMap<>();
+
+        for(int i = 0; i < mappings.length; i += 2) {
+            map.put((K)mappings[i], (V)mappings[i+1]);
+        }
+
+        return map;
     }
 }

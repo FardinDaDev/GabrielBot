@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     //compile 'com.github.DV8FromTheWorld:JDA:c92078d'
-    compile 'net.dv8tion:JDA:3.1.1_210'
+    compile 'net.dv8tion:JDA:3.1.1_212'
 
     compile 'com.sedmelluq:lavaplayer:1.2.39'
     compile 'com.sedmelluq:jda-nas:1.0.5'
@@ -37,6 +37,8 @@ dependencies {
     compile 'com.github.ben-manes.caffeine:caffeine:2.4.0'
 
     compile 'net.jodah:expiringmap:0.5.8'
+
+    compile 'org.luaj:luaj-jse:3.0-beta2'
 }
 
 shadowJar {

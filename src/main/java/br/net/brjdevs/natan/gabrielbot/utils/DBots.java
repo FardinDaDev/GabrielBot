@@ -24,7 +24,15 @@ public class DBots {
         return query("owners," + id);
     }
 
-    private static BotInfo[] query(String search) {
+    public static BotInfo[] byPrefix(String prefix) {
+        try {
+            return query("prefix," + URLEncoder.encode(prefix, "UTF-8"));
+        } catch(UnsupportedEncodingException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    public static BotInfo[] query(String search) {
         try {
             JSONArray res = Unirest.get("https://discordbots.org/api/bots?search=" + search)
                     .asJson()
@@ -38,7 +46,7 @@ public class DBots {
                         b.getString("username"),
                         b.getString("discriminator"),
                         getAvatar(b),
-                        b.getString("invite"),
+                        b.optString("invite", ""),
                         b.getString("shortdesc"),
                         b.getString("prefix"),
                         b.getString("lib"),
@@ -66,7 +74,7 @@ public class DBots {
     }
 
     private static String getAvatar(JSONObject object) {
-        return "https://cdn.discordapp.com/avatar/" + object.getString("id") + "/" + object.optString("avatar", object.getString("defAvatar")) + ".png";
+        return "https://images.discordapp.net/avatars/" + object.getString("id") + "/" + object.optString("avatar", object.getString("defAvatar")) + ".png?size=512";
     }
 
     public static class BotInfo {

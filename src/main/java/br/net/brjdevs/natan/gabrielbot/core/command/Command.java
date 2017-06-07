@@ -1,18 +1,21 @@
 package br.net.brjdevs.natan.gabrielbot.core.command;
 
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageEmbed;
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public interface Command {
-    void run(GuildMessageReceivedEvent event);
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Command {
+    String name();
+    String usage();
+    String description();
+    CommandCategory category();
     CommandPermission permission();
 
-    String description(GuildMessageReceivedEvent event);
-
-    MessageEmbed help(GuildMessageReceivedEvent event);
-
-    CommandCategory category();
-
-    boolean isHiddenFromHelp();
+    boolean advancedSplit()
+            default true;
+    boolean isHiddenFromHelp()
+            default false;
 }

@@ -1,64 +1,69 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
+import br.net.brjdevs.natan.gabrielbot.GabrielBot;
+import br.net.brjdevs.natan.gabrielbot.core.command.Argument;
+import br.net.brjdevs.natan.gabrielbot.core.command.Command;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
-import br.net.brjdevs.natan.gabrielbot.core.command.CommandRegistry;
-import br.net.brjdevs.natan.gabrielbot.core.command.RegisterCommand;
-import br.net.brjdevs.natan.gabrielbot.core.command.SimpleCommand;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
+import br.net.brjdevs.natan.gabrielbot.core.command.CommandReference;
 import br.net.brjdevs.natan.gabrielbot.utils.DBots;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.MessageEmbed;
+import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-@RegisterCommand.Class
 public class DBotsCommand {
-    @RegisterCommand
-    public static void dbots(CommandRegistry cr) {
-        cr.register("bots", SimpleCommand.builder(CommandCategory.MISC)
-                .description("Gets discordbots.org bot info")
-                .help((thiz, event)->thiz.helpEmbed(event, "bots",
-                        "`>>bots name <name>`: gets a bot by name\n" +
-                               "`>>bots id <id>`: gets a bot by id\n" +
-                               "`>>bots owner <id>`: gets a bot by owner id"
-                ))
-                .code((thiz, event, args)->{
-                    if(args.length < 2) {
-                        thiz.onHelp(event);
-                        return;
-                    }
-                    if(args[0].equals("name")) {
-                        event.getChannel().sendMessage(bot(event, DBots.byName(args[1]))).queue();
-                        return;
-                    }
-                    long id;
-                    try {
-                        id = Long.parseLong(args[1]);
-                    } catch(NumberFormatException e) {
-                        event.getChannel().sendMessage("`" + args[1] + "` is not a valid number").queue();
-                        return;
-                    }
-                    MessageEmbed embed;
-                    switch(args[0]) {
-                        case "id":
-                            embed = bot(event, DBots.byId(id));
-                            break;
-                        case "owner":
-                            embed = bot(event, DBots.byOwner(id));
-                            break;
-                        default:
-                            thiz.onHelp(event);
-                            return;
-                    }
-                    event.getChannel().sendMessage(embed).queue();
-                })
-                .build()
-        );
+    @Command(
+            name = "bots",
+            description = "Gets discordbots.org bot info",
+            usage = "`>>bots name <name>`: gets a bot by name\n" +
+                    "`>>bots id <id>`: gets a bot by id\n" +
+                    "`>>bots owner <id>`: gets a bot by owner id\n" +
+                    "`>>bots prefix <prefix>`: gets a bot by prefix",
+            permission = CommandPermission.USER,
+            category = CommandCategory.MISC
+    )
+    public static void dbots(@Argument("this") CommandReference thiz, @Argument("event") GuildMessageReceivedEvent event, @Argument("channel") TextChannel channel, @Argument("args") String[] args) {
+        if (args.length < 2) {
+            thiz.onHelp(event);
+            return;
+        }
+        if (args[0].equals("name")) {
+            channel.sendMessage(bot(event, DBots.byName(String.join(" ", Arrays.copyOfRange(args, 1, args.length))))).queue();
+            return;
+        }
+        if(args[0].equals("prefix")) {
+            channel.sendMessage(bot(event, DBots.byPrefix(String.join(" ", Arrays.copyOfRange(args, 1, args.length))))).queue();
+            return;
+        }
+        long id;
+        try {
+            id = Long.parseLong(args[1]);
+        } catch (NumberFormatException e) {
+            channel.sendMessage("`" + args[1] + "` is not a valid number").queue();
+            return;
+        }
+        MessageEmbed embed;
+        switch (args[0]) {
+            case "id":
+                embed = bot(event, DBots.byId(id));
+                break;
+            case "owner":
+                embed = bot(event, DBots.byOwner(id));
+                break;
+            default:
+                thiz.onHelp(event);
+                return;
+        }
+        channel.sendMessage(embed).queue();
     }
 
     private static MessageEmbed bot(GuildMessageReceivedEvent event, DBots.BotInfo[] infos) {
-        if(infos.length == 0) {
+        if (infos.length == 0) {
             return new EmbedBuilder()
                     .setDescription("No bot that matches the specified criteria found")
                     .setColor(event.getMember().getColor())
@@ -70,21 +75,30 @@ public class DBotsCommand {
                 .setAuthor(info.name + "#" + info.discriminator, null, info.avatarUrl)
                 .setDescription("\u200D")
                 .setTitle("Bot Info")
-                .addField("ID", ""+info.id, true)
+                .addField("ID", "" + info.id, true)
                 .addField("Prefix",
                         info.prefix.replace("*", "\\*").replace("_", "\\_").replace("~", "\\~").replace("`", "\\`"),
-                true)
+                        true)
                 .addField("Invite", "[Click here](" + info.invite + ")", true)
-                .addField("Owners", Arrays.stream(info.owners).mapToObj(id->"<@" + id + ">").collect(Collectors.joining("\n")), true)
+                .addField("Owner" + (info.owners.length == 1 ? "" : "s"),
+                        Arrays.stream(info.owners).mapToObj(id -> event.getGuild().getMemberById(id) != null ? "<@" + id + ">" : getName(id)).collect(Collectors.joining("\n")),
+                        true)
                 .addField("Short Description", info.shortDesc, false)
-                .addField("Shard Count", info.shardCount == -1 ? "Unavailable" : ""+info.shardCount, true)
-                .addField("Guild Count", info.guildCount == -1 ? "Unavailable" : ""+info.guildCount, true)
-                .addField("Upvotes", ""+info.upvotes, true)
+                .addField("Shard Count", info.shardCount == -1 ? "Unavailable" : "" + info.shardCount, true)
+                .addField("Guild Count", info.guildCount == -1 ? "Unavailable" : "" + info.guildCount, true)
+                .addField("Upvotes", "" + info.upvotes, true)
                 .addField("Lib", info.lib, true)
-                .addField("Certified", ""+info.certified, true)
-                .setImage(info.avatarUrl)
+                .addField("Certified", "" + info.certified, true)
+                .setThumbnail(info.avatarUrl)
                 .setColor(event.getMember().getColor())
+                .setFooter("Best match out of " + infos.length, null)
                 .build();
 
+    }
+
+    private static String getName(long id) {
+        User u = GabrielBot.getInstance().getUserById(id);
+        if (u != null) return u.getName() + "#" + u.getDiscriminator();
+        return "<@" + id + ">";
     }
 }

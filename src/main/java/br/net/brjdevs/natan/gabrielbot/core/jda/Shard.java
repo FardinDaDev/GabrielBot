@@ -11,6 +11,7 @@ import br.net.brjdevs.natan.gabrielbot.music.MusicListener;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
+import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
@@ -18,8 +19,6 @@ import net.dv8tion.jda.core.audio.factory.DefaultSendFactory;
 import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.exceptions.RateLimitedException;
 import net.dv8tion.jda.core.managers.AudioManager;
-
-import javax.security.auth.login.LoginException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +109,18 @@ public class Shard {
     }
 
     public GuildMusicPlayer removePlayer(long guildId) {
+        GuildMusicPlayer[] gmp = new GuildMusicPlayer[1];
+        players.removeIf(g->{
+            if(g.guildId == guildId) {
+                gmp[0] = g;
+                return true;
+            }
+            return false;
+        });
+        return gmp[0];
+    }
+
+    public GuildMusicPlayer interruptPlayer(long guildId) {
         GuildMusicPlayer[] gmp = new GuildMusicPlayer[1];
         players.removeIf(g->{
             if(g.guildId == guildId) {
