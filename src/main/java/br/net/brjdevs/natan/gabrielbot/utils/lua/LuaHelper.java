@@ -1,5 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.utils.lua;
 
+import br.net.brjdevs.natan.gabrielbot.utils.brainfuck.BrainfuckInterpreter;
+import net.dv8tion.jda.core.OnlineStatus;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.Region;
 import net.dv8tion.jda.core.entities.Game;
@@ -97,6 +99,21 @@ public class LuaHelper {
                 }
             });
         }
+
+        globals.set("brainfuck", new LibFunction() {
+            @Override
+            public Varargs invoke(Varargs v) {
+                String code = v.arg1().checkstring().tojstring();
+                LuaValue i = v.arg(2);
+                String input = i.isnil() ? "" : i.checkstring().tojstring();
+                BrainfuckInterpreter bf = new BrainfuckInterpreter(1000, 1<<10);
+                try {
+                    return valueOf(bf.process(code.toCharArray(), input));
+                } catch(BrainfuckInterpreter.BrainfuckException e) {
+                    return varargsOf(new LuaValue[]{NIL, valueOf(e.getMessage())});
+                }
+            }
+        });
 
         globals.set("input", input);
         LuaValue[] args = Arrays.stream(input.split(" ")).map(LuaValue::valueOf).toArray(LuaValue[]::new);
@@ -393,6 +410,10 @@ public class LuaHelper {
             return guild.getRoles().stream().map(SafeRole::new).collect(Collectors.toList());
         }
 
+        public List<SafeMember> getMembers() {
+            return guild.getMembers().stream().map(SafeMember::new).collect(Collectors.toList());
+        }
+
         public SafeMember getOwner() {
             return new SafeMember(guild.getOwner());
         }
@@ -421,8 +442,8 @@ public class LuaHelper {
             return member.getGame();
         }
 
-        public String getOnlineStatus() { //enums would be a pain in lua
-            return member.getOnlineStatus().getKey();
+        public OnlineStatus getOnlineStatus() {
+            return member.getOnlineStatus();
         }
 
         public String getName() {

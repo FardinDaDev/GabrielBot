@@ -65,6 +65,12 @@ public class StarboardListener implements EventListener {
                     .setTimestamp(m.getCreationTime())
                     .setFooter("Message sent on #" + event.getChannel().getName(), null)
                     .setTitle(String.format("%d %s | %d", 1, STAR_2, id));
+            if(m.getAttachments().size() > 0) {
+                Message.Attachment a = m.getAttachments().get(0);
+                if(a.isImage()) {
+                    eb.setImage(a.getUrl());
+                }
+            }
             tc.sendMessage(eb.build()).queue(message->{
                 sdm.setStarboardMessage(m, message);
                 sdm.save();

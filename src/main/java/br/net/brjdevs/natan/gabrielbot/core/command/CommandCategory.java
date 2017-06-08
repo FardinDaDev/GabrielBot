@@ -8,6 +8,7 @@ public enum CommandCategory {
     INFO(CommandPermission.USER, EmoteReference.BALLOT_BOX),
     IMAGE(CommandPermission.USER, EmoteReference.FRAME_PHOTO),
     FUN(CommandPermission.USER, EmoteReference.POPPER),
+    CODE(CommandPermission.USER, EmoteReference.KEYBOARD),
     LARS(CommandPermission.LARS, EmoteReference.LARS_X_KODE),
     MODERATION(CommandPermission.ADMIN, EmoteReference.HAMMER),
     OWNER(CommandPermission.OWNER, EmoteReference.GEAR);

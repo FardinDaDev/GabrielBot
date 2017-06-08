@@ -1,8 +1,6 @@
 package br.net.brjdevs.natan.gabrielbot.commands.custom;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
-import br.net.brjdevs.natan.gabrielbot.commands.fun.BrainfuckInterpreter;
-import br.net.brjdevs.natan.gabrielbot.commands.fun.Jokes;
 import br.net.brjdevs.natan.gabrielbot.lang.common.Opcodes;
 import br.net.brjdevs.natan.gabrielbot.lang.compiler.Parser;
 import br.net.brjdevs.natan.gabrielbot.lang.runtime.Array;
@@ -12,6 +10,8 @@ import br.net.brjdevs.natan.gabrielbot.lang.runtime.invoke.Method;
 import br.net.brjdevs.natan.gabrielbot.lang.runtime.opcodes.InvokeStaticImpl;
 import br.net.brjdevs.natan.gabrielbot.utils.StringUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
+import br.net.brjdevs.natan.gabrielbot.utils.brainfuck.BrainfuckInterpreter;
+import br.net.brjdevs.natan.gabrielbot.utils.commands.Jokes;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.io.UnsupportedEncodingException;

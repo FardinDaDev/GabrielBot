@@ -26,7 +26,8 @@ public class CustomCommands {
                     "`>>custom raw <name>`: shows the response of a custom command\n" +
                     "`>>custom rename <name> <newname>`: renames a custom command",
             permission = CommandPermission.USER,
-            category = CommandCategory.MISC
+            category = CommandCategory.MISC,
+            advancedSplit = false
     )
     public static void custom(@Argument("this") CommandReference thiz, @Argument("event") GuildMessageReceivedEvent event, @Argument("guild") Guild guild, @Argument("channel") TextChannel channel, @Argument("args") String[] args) {
         if (args.length == 0) {

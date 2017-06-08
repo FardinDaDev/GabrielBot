@@ -43,16 +43,6 @@ public class CommandRegistry {
         }
     }
 
-    public void process(String commandName, Map<String, ?> args) {
-        CommandReference ref = commands.get(commandName);
-        if(ref == null) return;
-        try {
-            ref.invoker.invoke(args);
-        } catch(Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void process(GuildMessageReceivedEvent event) {
         String guildid = event.getGuild().getId(),
                 authorid = event.getAuthor().getId();
@@ -62,8 +52,9 @@ public class CommandRegistry {
         String prefix = GabrielData.config().prefix;
         GabrielData.GuildCommandData data = GabrielData.guildCommands().get().get(event.getGuild().getId());
         String guildPrefix = data == null ? null : data.prefix;
-        if(first.startsWith(prefix) || (guildPrefix != null && first.startsWith(guildPrefix))) {
-            String cmdname = first.substring(first.startsWith(prefix) ? prefix.length() : guildPrefix.length());
+        String usedPrefix;
+        if(first.startsWith(usedPrefix = prefix) || (guildPrefix != null && first.startsWith(usedPrefix = guildPrefix))) {
+            String cmdname = first.substring(usedPrefix.length());
             CommandReference ref = commands.get(cmdname);
             if(ref == null) {
                 handleCustom(event, cmdname);
@@ -92,7 +83,8 @@ public class CommandRegistry {
                         "jda", event.getJDA(),
                         "guildid", guildid,
                         "prefix", guildPrefix,
-                        "this", ref
+                        "this", ref,
+                        "prefix", usedPrefix
                 ));
             } catch(Throwable t) {
                 LOGGER.error("Error running command " + cmdname, t);
@@ -105,6 +97,10 @@ public class CommandRegistry {
         GabrielData.GuildCommandData data = GabrielData.guildCommands().get().get(event.getGuild().getId());
         if(data == null || data.custom.isEmpty() || !data.custom.contains(cmdname)) return;
         CustomCommand custom = GabrielData.guilds().get().get(event.getGuild().getId()).customCommands.get(cmdname);
+        if(custom == null) {
+            data.custom.remove(cmdname);
+            return;
+        }
         String rawInput = event.getMessage().getRawContent();
 
         User user = event.getAuthor();

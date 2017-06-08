@@ -15,14 +15,9 @@ import br.net.brjdevs.natan.gabrielbot.utils.KryoUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.UnsafeUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import br.net.brjdevs.natan.gabrielbot.utils.data.JedisDataManager;
-import br.net.brjdevs.natan.gabrielbot.utils.lua.LuaHelper;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.jse.JsePlatform;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -235,42 +230,6 @@ public class OwnerCommands {
                 return;
         }
         thiz.onHelp(event);
-    }
-
-    @Command(
-            name = "lua",
-            description = "Evaluates lua code",
-            usage = "`>>lua <code>`",
-            permission = CommandPermission.OWNER,
-            category = CommandCategory.OWNER,
-            advancedSplit = false
-    )
-    public static void lua(@Argument("this") CommandReference thiz, @Argument("event")GuildMessageReceivedEvent event, @Argument("args") String[] args) {
-        if(args.length == 0) {
-            thiz.onHelp(event);
-            return;
-        }
-        String code = String.join(" ", args);
-        Globals globals = JsePlatform.debugGlobals();
-        globals.set("event", LuaHelper.coerce(event));
-        Thread thread = new Thread(() -> {
-            try {
-                LuaValue v = globals.load(code).call();
-                String s = v.tojstring();
-                event.getChannel().sendMessage(v.isnil() ? "Executed successfully with no returns" : "Executed successfully and returned " + (s.length() > 500 ? Utils.paste(s) : String.format("```%n%s```", s))).queue();
-            } catch(LuaError e) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.close();
-                String s = sw.toString();
-                if (s.length() > 500) s = Utils.paste(s);
-                event.getChannel().sendMessage("Error executing: ```\n" + s + "```").queue();
-            }
-        }, "LuaThread");
-        thread.setPriority(Thread.MAX_PRIORITY);
-        thread.setDaemon(true);
-        thread.start();
     }
 
     @Command(

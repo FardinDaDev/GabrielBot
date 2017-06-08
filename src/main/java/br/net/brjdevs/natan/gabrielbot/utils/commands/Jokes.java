@@ -1,4 +1,4 @@
-package br.net.brjdevs.natan.gabrielbot.commands.fun;
+package br.net.brjdevs.natan.gabrielbot.utils.commands;
 
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;

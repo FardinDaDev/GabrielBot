@@ -1,40 +1,16 @@
 package br.net.brjdevs.natan.gabrielbot.commands;
 
-import br.net.brjdevs.natan.gabrielbot.commands.fun.BrainfuckInterpreter;
-import br.net.brjdevs.natan.gabrielbot.commands.fun.Jokes;
 import br.net.brjdevs.natan.gabrielbot.core.command.Argument;
 import br.net.brjdevs.natan.gabrielbot.core.command.Command;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandReference;
+import br.net.brjdevs.natan.gabrielbot.utils.commands.Jokes;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 public class FunCommands {
-    @Command(
-            name = "brainfuck",
-            description = "Evaluates brainfuck code",
-            usage = "`>>brainfuck <code> <input>`" +
-            "\n\n" +
-            "`>>brainfuck ++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.`: Prints \"Hello World!\"",
-            permission = CommandPermission.USER,
-            category = CommandCategory.FUN
-    )
-    public static void brainfuck(@Argument("this") CommandReference thiz, @Argument("event") GuildMessageReceivedEvent event, @Argument("args") String[] args, @Argument("channel") TextChannel channel) {
-        if (args.length == 0) {
-            thiz.onHelp(event);
-            return;
-        }
-        try {
-            BrainfuckInterpreter interpreter = new BrainfuckInterpreter(20_000, 1 << 12); //20k ops, 4K ram
-            String out = interpreter.process(args[0].toCharArray(), args.length == 1 ? "" : args[1]);
-            channel.sendMessage(out.isEmpty() ? "No returns" : out).queue();
-        } catch (BrainfuckInterpreter.BrainfuckException ex) {
-            channel.sendMessage(ex.getMessage()).queue();
-        }
-    }
-
     @Command(
             name = "joke",
             description = "Sends a joke",

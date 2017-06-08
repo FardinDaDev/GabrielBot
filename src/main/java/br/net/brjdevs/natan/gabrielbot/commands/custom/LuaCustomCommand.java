@@ -3,7 +3,9 @@ package br.net.brjdevs.natan.gabrielbot.commands.custom;
 import br.net.brjdevs.natan.gabrielbot.utils.lua.InstructionLimitException;
 import br.net.brjdevs.natan.gabrielbot.utils.lua.LuaHelper;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
+import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
+import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaValue;
 
 import java.util.Map;
@@ -19,8 +21,11 @@ public class LuaCustomCommand extends CustomCommand {
     public String process(GuildMessageReceivedEvent event, String input, Map<String, String> mappings) {
         try {
             StringBuilder sb = new StringBuilder();
-            LuaValue ret = LuaHelper.setup(event, 10000, 0, input, sb).load(code).call();
-            return sb.toString().trim().length() == 0 ? ret.tojstring() : sb.toString();
+            Globals g = LuaHelper.setup(event, 10000, 0, input, sb);
+            LuaFunction tostring = g.get("tostring").checkfunction();
+            LuaValue ret = g.load(code).call();
+            String s = sb.toString();
+            return ret.isnil() ? s.trim().isEmpty() ? null : s : tostring.call(ret).tojstring();
         } catch (LuaError error) {
             Throwable cause = error.getCause();
             if (cause instanceof InstructionLimitException) {

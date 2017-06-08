@@ -1,4 +1,4 @@
-package br.net.brjdevs.natan.gabrielbot.commands.fun;
+package br.net.brjdevs.natan.gabrielbot.utils.brainfuck;
 
 import java.nio.ByteBuffer;
 

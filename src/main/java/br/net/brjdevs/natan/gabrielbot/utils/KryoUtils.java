@@ -39,6 +39,7 @@ public class KryoUtils {
         return serialize(POOL, obj);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T unserialize(Kryo kryo, byte[] data) {
         Input in = new Input(new ByteArrayInputStream(checkNotNull(data, "data")));
         Object o = checkNotNull(kryo, "kryo").readClassAndObject(in);
