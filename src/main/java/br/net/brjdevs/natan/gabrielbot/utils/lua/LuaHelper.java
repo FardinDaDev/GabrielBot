@@ -1,17 +1,6 @@
 package br.net.brjdevs.natan.gabrielbot.utils.lua;
 
 import br.net.brjdevs.natan.gabrielbot.utils.brainfuck.BrainfuckInterpreter;
-import net.dv8tion.jda.core.OnlineStatus;
-import net.dv8tion.jda.core.Permission;
-import net.dv8tion.jda.core.Region;
-import net.dv8tion.jda.core.entities.Game;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.ISnowflake;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
@@ -34,13 +23,10 @@ import org.luaj.vm2.lib.jse.CoerceLuaToJava;
 import org.luaj.vm2.lib.jse.JseBaseLib;
 import org.luaj.vm2.lib.jse.JseMathLib;
 
-import java.awt.Color;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LuaHelper {
     private static final String INSTANCE_KEY = "instance";
@@ -100,6 +86,25 @@ public class LuaHelper {
             });
         }
 
+        globals.set("input", input);
+        LuaValue[] args = Arrays.stream(input.split(" ")).map(LuaValue::valueOf).toArray(LuaValue[]::new);
+        if(args.length != 0) globals.set("args", new LuaTable(null, args, null));
+        if(event != null) {
+            SafeGuildMessageReceivedEvent e = new SafeGuildMessageReceivedEvent(event, maxMessages);
+            globals.set("user", coerce(e.getAuthor()));
+            globals.set("channel", coerce(e.getChannel()));
+            globals.set("member", coerce(e.getMember()));
+            globals.set("guild", coerce(e.getGuild()));
+            globals.set("message", coerce(e.getMessage()));
+            globals.set("event", coerce(e));
+        }
+
+        extraFunctions(globals);
+
+        return globals;
+    }
+
+    public static void extraFunctions(Globals globals) {
         globals.set("brainfuck", new LibFunction() {
             @Override
             public Varargs invoke(Varargs v) {
@@ -115,20 +120,16 @@ public class LuaHelper {
             }
         });
 
-        globals.set("input", input);
-        LuaValue[] args = Arrays.stream(input.split(" ")).map(LuaValue::valueOf).toArray(LuaValue[]::new);
-        if(args.length != 0) globals.set("args", new LuaTable(null, args, null));
-        if(event != null) {
-            SafeGuildMessageReceivedEvent e = new SafeGuildMessageReceivedEvent(event, maxMessages);
-            globals.set("user", coerce(e.getAuthor()));
-            globals.set("channel", coerce(e.getChannel()));
-            globals.set("member", coerce(e.getMember()));
-            globals.set("guild", coerce(e.getGuild()));
-            globals.set("message", coerce(e.getMessage()));
-            globals.set("event", coerce(e));
-        }
-
-        return globals;
+        globals.set("stream", new VarArgFunction() {
+            @Override
+            public Varargs onInvoke(Varargs args) {
+                LuaValue[] values = new LuaValue[args.narg()];
+                for(int i = 0; i < values.length;) {
+                    values[i] = args.arg(++i);
+                }
+                return coerce(Arrays.stream(values).map(v->getInstance(v, Object.class)));
+            }
+        });
     }
 
     public static CycleLimiter getLimiter(Globals globals) {
@@ -141,10 +142,31 @@ public class LuaHelper {
     }
 
     private static LuaValue getInstance(LuaValue t) {
-        return t.getmetatable().istable() ? t.getmetatable().get(INSTANCE_KEY) : LuaValue.NIL;
+        return t.istable() ? t.getmetatable().istable() ? t.getmetatable().get(INSTANCE_KEY) : LuaValue.NIL : LuaValue.NIL;
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> T getInstance(LuaValue lua, Class<T> clazz) {
+        if(lua.isnil()) return null;
+        if(lua.istable()) {
+            LuaValue mt = lua.getmetatable();
+            if(mt.istable()) {
+                return clazz.cast(((Instance)CoerceLuaToJava.coerce(mt.get(INSTANCE_KEY), Instance.class)).instance);
+            }
+        }
+        return (T)CoerceLuaToJava.coerce(lua, clazz);
+    }
+
+    static LuaValue toLua(Object obj) {
+        LuaValue v = CoerceJavaToLua.coerce(obj);
+        return v.isuserdata() ? LuaHelper.coerce(obj) : v;
     }
 
     public static LuaTable coerce(Object obj) {
+        return coerce(ClassLoader.getSystemClassLoader(), obj);
+    }
+
+    public static LuaTable coerce(ClassLoader lambdaLoader, Object obj) {
         LuaTable object = new LuaTable();
         Class<?> cls = obj.getClass();
         for(Method m : cls.getMethods()) {
@@ -172,7 +194,8 @@ public class LuaHelper {
             if(ret.getName().startsWith("java.lang.reflect.") || ret.getName().startsWith("java.lang.annotation.") || ret == ClassLoader.class) continue;
 
 
-            object.set(m.getName(), coerce(obj, m));
+            m.setAccessible(true);
+            object.set(m.getName(), coerce(lambdaLoader, object, obj, m));
         }
 
         LuaTable ret = new LuaTable();
@@ -211,29 +234,48 @@ public class LuaHelper {
     }
 
     public static LuaFunction coerce(Object instance, Method method) {
+        return coerce(null, null, instance, method);
+    }
+
+    public static LuaFunction coerce(ClassLoader lambdaLoader, Object instance, Method method) {
+        return coerce(lambdaLoader, null, instance, method);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static LuaFunction coerce(ClassLoader lambdaLoader, LuaTable object, Object instance, Method method) {
         Class<?>[] params = method.getParameterTypes();
         return new VarArgFunction() {
             @Override
             public Varargs invoke(LuaValue[] values) {
                 Object[] args = new Object[params.length];
                 for(int i = 0; i < Math.min(params.length, values.length); i++) {
+                    Class<?> paramClass = params[i];
                     LuaValue v = values[i];
                     if(v.istable()) {
                         LuaValue l = getInstance(v);
                         if(l.isuserdata(Instance.class)) {
                             Object o = ((Instance)CoerceLuaToJava.coerce(l, Instance.class)).instance;
                             if(o != null && !params[i].isInstance(o)) {
-                                return varargsOf(new LuaValue[]{NIL, valueOf("TypeError: expected " + params[i].getName() + ", got " + o.getClass().getName())});
+                                return varargsOf(new LuaValue[]{NIL, valueOf("TypeError: expected " + paramClass.getName() + ", got " + o.getClass().getName())});
                             }
                             args[i] = o;
                             continue;
                         }
                     }
-                    args[i] = CoerceLuaToJava.coerce(v, params[i]);
+                    if(LuaLambda.isLambda(paramClass)) {
+                        LuaFunction function = (LuaFunction)CoerceLuaToJava.coerce(v, LuaFunction.class);
+                        args[i] = LuaLambda.toLambda(lambdaLoader, paramClass, function);
+                    } else {
+                        args[i] = CoerceLuaToJava.coerce(v, paramClass);
+                    }
                 }
                 try {
                     Object o = method.invoke(instance, args);
+                    if(o == instance && object != null) return object;
                     if(o == null) return NIL;
+                    if(o instanceof Stream) {
+                        //return coerce(new LuaStream((Stream)o));
+                    }
                     LuaValue v = CoerceJavaToLua.coerce(o);
                     if(v.isuserdata()) {
                         return coerce(o);
@@ -255,253 +297,6 @@ public class LuaHelper {
                 return invoke(v);
             }
         };
-    }
-
-    private static class SafeISnowflake {
-        private final ISnowflake snowflake;
-
-        SafeISnowflake(ISnowflake snowflake) {
-            this.snowflake = snowflake;
-        }
-
-        public String getId() {
-            return snowflake.getId();
-        }
-
-        public long getIdLong() {
-            return snowflake.getIdLong();
-        }
-
-        public OffsetDateTime getCreationTime() {
-            return snowflake.getCreationTime();
-        }
-    }
-
-    private static class SafeGuildMessageReceivedEvent {
-        private final SafeChannel channel;
-        private final SafeUser author;
-        private final SafeMember member;
-        private final SafeGuild guild;
-        private final SafeMessage message;
-
-        SafeGuildMessageReceivedEvent(GuildMessageReceivedEvent event, int maxMessages) {
-            this.channel = new SafeChannel(event.getChannel(), maxMessages);
-            this.author = new SafeUser(event.getAuthor());
-            this.member = new SafeMember(event.getMember());
-            this.guild = new SafeGuild(event.getGuild(), channel);
-            this.message = new SafeMessage(event.getMessage());
-        }
-
-        public SafeChannel getChannel() {
-            return channel;
-        }
-
-        public SafeUser getAuthor() {
-            return author;
-        }
-
-        public SafeMember getMember() {
-            return member;
-        }
-
-        public SafeGuild getGuild() {
-            return guild;
-        }
-
-        public SafeMessage getMessage() {
-            return message;
-        }
-    }
-
-    private static class SafeUser extends SafeISnowflake {
-        private final User user;
-
-        SafeUser(User user) {
-            super(user);
-            this.user = user;
-        }
-
-        public String getName() {
-            return user.getName();
-        }
-
-        public String getDiscriminator() {
-            return user.getDiscriminator();
-        }
-
-        public String getAvatarUrl() {
-            return user.getEffectiveAvatarUrl();
-        }
-
-        public boolean isBot() {
-            return user.isBot();
-        }
-
-        public String getAsMention() {
-            return user.getAsMention();
-        }
-    }
-
-    private static class SafeChannel extends SafeISnowflake {
-        private final MessageChannel channel;
-        private final int maxMessages;
-        private int messages = 0;
-
-        SafeChannel(MessageChannel channel, int maxMessages) {
-            super(channel);
-            this.channel = channel;
-            this.maxMessages = maxMessages;
-        }
-
-        public void sendMessage(String message) {
-            if(++messages >= maxMessages) throw new LuaError("Maximum amount of messages reached");
-            channel.sendMessage(message).queue();
-        }
-    }
-
-    private static class SafeMessage extends SafeISnowflake {
-        private final Message message;
-
-        SafeMessage(Message message) {
-            super(message);
-            this.message = message;
-        }
-
-        public String getContent() {
-            return message.getContent();
-        }
-
-        public String getRawContent() {
-            return message.getRawContent();
-        }
-
-        public String getStrippedContent() {
-            return message.getStrippedContent();
-        }
-    }
-
-    private static class SafeGuild extends SafeISnowflake {
-        private final Guild guild;
-        private final SafeChannel channel;
-
-        SafeGuild(Guild guild, SafeChannel channel) {
-            super(guild);
-            this.guild = guild;
-            this.channel = channel;
-        }
-
-        public String getName() {
-            return guild.getName();
-        }
-
-        public Guild.ExplicitContentLevel getExplicitContentLevel() {
-            return guild.getExplicitContentLevel();
-        }
-
-        public Region getRegion() {
-            return guild.getRegion();
-        }
-
-        public List<SafeChannel> getTextChannels() {
-            return guild.getTextChannels().stream().map(c->c.getIdLong() == channel.getIdLong() ? channel : new SafeChannel(c, 0)).collect(Collectors.toList());
-        }
-
-        public List<SafeRole> getRoles() {
-            return guild.getRoles().stream().map(SafeRole::new).collect(Collectors.toList());
-        }
-
-        public List<SafeMember> getMembers() {
-            return guild.getMembers().stream().map(SafeMember::new).collect(Collectors.toList());
-        }
-
-        public SafeMember getOwner() {
-            return new SafeMember(guild.getOwner());
-        }
-
-        public String getIconUrl() {
-            return guild.getIconUrl();
-        }
-    }
-
-    private static class SafeMember {
-        private final Member member;
-
-        SafeMember(Member member) {
-            this.member = member;
-        }
-
-        public Color getColor() {
-            return member.getColor();
-        }
-
-        public OffsetDateTime getJoinDate() {
-            return member.getJoinDate();
-        }
-
-        public Game getGame() {
-            return member.getGame();
-        }
-
-        public OnlineStatus getOnlineStatus() {
-            return member.getOnlineStatus();
-        }
-
-        public String getName() {
-            return member.getEffectiveName();
-        }
-
-        public boolean isOwner() {
-            return member.isOwner();
-        }
-
-        public List<SafeRole> getRoles() {
-            return member.getRoles().stream().map(SafeRole::new).collect(Collectors.toList());
-        }
-    }
-
-    private static class SafeRole extends SafeISnowflake {
-        private final Role role;
-
-        SafeRole(Role role) {
-            super(role);
-            this.role = role;
-        }
-
-        public String getName() {
-            return role.getName();
-        }
-
-        public List<Permission> getPermissions() {
-            return role.getPermissions();
-        }
-
-        public long getPermissionsRaw() {
-            return role.getPermissionsRaw();
-        }
-
-        public int getPosition() {
-            return role.getPosition();
-        }
-
-        public int getPositionRaw() {
-            return role.getPositionRaw();
-        }
-
-        public boolean isManaged() {
-            return role.isManaged();
-        }
-
-        public boolean isPublicRole() {
-            return role.isPublicRole();
-        }
-
-        public boolean isMentionable() {
-            return role.isMentionable();
-        }
-
-        public boolean isSeparate() {
-            return role.isHoisted();
-        }
     }
 
     private static class Instance {

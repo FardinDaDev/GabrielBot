@@ -22,7 +22,7 @@ public class PrologBuilder {
     }
 
     public PrologBuilder addLabel(String name) {
-        sb.append("--").append(name).append("--").append('\n');
+        sb.append("-- ").append(name).append(" --").append('\n');
         return this;
     }
 

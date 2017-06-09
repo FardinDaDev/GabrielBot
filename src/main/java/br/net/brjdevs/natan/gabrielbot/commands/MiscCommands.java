@@ -210,7 +210,7 @@ public class MiscCommands {
         return ((days == 0 ? "" : days + " days, ") +
                 (hours == 0 ? "" : hours + " hours, ") +
                 (minutes == 0 ? "" : minutes + " minutes, ") +
-                (seconds == 0 ? "" : seconds + " seconds")).replaceAll(",\\s$", "");
+                (seconds == 0 ? "" : seconds + " seconds")).replaceAll(", $", "");
     }
 
     @Command(

@@ -8,6 +8,7 @@ import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandReference;
 import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
+import br.net.brjdevs.natan.gabrielbot.utils.DiscordUtils;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.TextChannel;
@@ -42,8 +43,18 @@ public class CustomCommands {
                 channel.sendMessage("This guild has no custom commands").queue();
                 return;
             }
-            channel.sendMessage(new EmbedBuilder().setDescription(commandData.custom.stream().map(name -> '`' + name + '`').collect(Collectors.joining(", "))).build()
-            ).queue();
+            String s = commandData.custom.stream().map(name -> '`' + name + '`').collect(Collectors.joining(", "));
+            if(s.length() < 500) {
+                channel.sendMessage(new EmbedBuilder().setDescription(s).setColor(event.getMember().getColor()).build()).queue();
+                return;
+            }
+            int[] i = new int[1];
+            DiscordUtils.list(event, 120, false, (page, total)->{
+                return new EmbedBuilder()
+                        .setTitle("Custom commands")
+                        .setFooter("Times out in 2 minutes of inactivity", null)
+                        .setColor(event.getMember().getColor());
+            }, commandData.custom.stream().map(name -> i[0]++ + "- `" + name + '`').toArray(String[]::new));
             return;
         }
 
