@@ -5,47 +5,44 @@ import net.dv8tion.jda.core.entities.Role;
 
 import java.util.List;
 
-class SafeRole extends SafeISnowflake {
-    private final Role role;
-
+class SafeRole extends SafeISnowflake<Role> {
     SafeRole(Role role) {
         super(role);
-        this.role = role;
     }
 
     public String getName() {
-        return role.getName();
+        return snowflake.getName();
     }
 
     public List<Permission> getPermissions() {
-        return role.getPermissions();
+        return snowflake.getPermissions();
     }
 
     public long getPermissionsRaw() {
-        return role.getPermissionsRaw();
+        return snowflake.getPermissionsRaw();
     }
 
     public int getPosition() {
-        return role.getPosition();
+        return snowflake.getPosition();
     }
 
     public int getPositionRaw() {
-        return role.getPositionRaw();
+        return snowflake.getPositionRaw();
     }
 
     public boolean isManaged() {
-        return role.isManaged();
+        return snowflake.isManaged();
     }
 
     public boolean isPublicRole() {
-        return role.isPublicRole();
+        return snowflake.isPublicRole();
     }
 
     public boolean isMentionable() {
-        return role.isMentionable();
+        return snowflake.isMentionable();
     }
 
     public boolean isSeparate() {
-        return role.isHoisted();
+        return snowflake.isHoisted();
     }
 }

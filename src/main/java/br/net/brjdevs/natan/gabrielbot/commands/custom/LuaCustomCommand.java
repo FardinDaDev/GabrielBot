@@ -38,6 +38,6 @@ public class LuaCustomCommand extends CustomCommand {
 
     @Override
     public String getRaw() {
-        return code;
+        return PREFIX_LUA + code;
     }
 }

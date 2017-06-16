@@ -98,45 +98,45 @@ public class StarboardListener implements EventListener {
         }
 
         @Override
-        public boolean add(MessageReactionAddEvent event) {
-            if(event.getUser().isBot() || event.getUser().getIdLong() == messageAuthor) return false;
+        public int add(MessageReactionAddEvent event) {
+            if(event.getUser().isBot() || event.getUser().getIdLong() == messageAuthor) return IGNORED;
             String reaction = event.getReactionEmote().getName();
-            if(!reaction.equals(STAR_1)) return false;
-            if(checkPerms(event)) return false;
+            if(!reaction.equals(STAR_1)) return IGNORED;
+            if(checkPerms(event)) return IGNORED;
             reactions.incrementAndGet();
             return update();
         }
 
         @Override
-        public boolean remove(MessageReactionRemoveEvent event) {
-            if(event.getUser().isBot() || event.getUser().getIdLong() == messageAuthor) return false;
+        public int remove(MessageReactionRemoveEvent event) {
+            if(event.getUser().isBot() || event.getUser().getIdLong() == messageAuthor) return IGNORED;
             String reaction = event.getReactionEmote().getName();
-            if(!reaction.equals(STAR_1)) return false;
-            if(checkPerms(event)) return false;
+            if(!reaction.equals(STAR_1)) return IGNORED;
+            if(checkPerms(event)) return IGNORED;
             reactions.decrementAndGet();
             return update();
         }
 
         @Override
-        public boolean removeAll(MessageReactionRemoveAllEvent event) {
+        public int removeAll(MessageReactionRemoveAllEvent event) {
             starboardMessage.delete().queue();
             GabrielData.starboards().remove(starboardMessage);
-            return true;
+            return COMPLETED;
         }
 
         private boolean checkPerms(GenericMessageReactionEvent event) {
             return blacklist.contains(event.getUser().getIdLong());
         }
 
-        private boolean update() {
+        private int update() {
             int r = reactions.get();
             if(r < minStars) {
                 starboardMessage.delete().queue();
                 GabrielData.starboards().remove(starboardMessage);
-                return true;
+                return COMPLETED;
             }
             starboardMessage.editMessage(builder.setTitle(String.format("%d %s | %d", r, STAR_2, messageId)).build()).queue();
-            return false;
+            return RESET_TIMEOUT;
         }
     }
 }

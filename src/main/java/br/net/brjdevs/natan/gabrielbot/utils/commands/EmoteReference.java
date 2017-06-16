@@ -70,7 +70,9 @@ public enum EmoteReference {
     HEARTBEAT(":heartbeat:", "\uD83D\uDC93"),
     PING_PONG(":ping_pong:", "\uD83C\uDFD3"),
     LARS_X_KODE("<:LarsXKode:318417004795002880>", null),
-    KEYBOARD(":keyboard:", "\u2328");
+    KEYBOARD(":keyboard:", "\u2328"),
+    WRENCH(":wrench:", "\uD83D\uDD27"),
+    VIDEO_GAME(":video_game:", "\uD83C\uDFAE");
 
 
     private final String discordNotation;

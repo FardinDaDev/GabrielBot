@@ -1,6 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.music;
 
 import br.net.brjdevs.natan.gabrielbot.GabrielBot;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.Operation;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import br.net.brjdevs.natan.gabrielbot.utils.DiscordUtils;
 import br.net.brjdevs.natan.gabrielbot.utils.Utils;
@@ -15,7 +16,7 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.function.IntConsumer;
 
 public class TrackLoader implements AudioLoadResultHandler {
@@ -65,11 +66,11 @@ public class TrackLoader implements AudioLoadResultHandler {
             }
             long id = event.getAuthor().getIdLong(); //just in case someone else uses play before timing out
             ReactionOperations.create(event.getChannel().sendMessage(builder.build()).complete(), 15, (e)->{
-                if(e.getUser().getIdLong() != id) return false;
+                if(e.getUser().getIdLong() != id) return Operation.IGNORED;
                 int i = e.getReactionEmote().getName().charAt(0)-'\u0030';
-                if(i < 1 || i > 4) return false;
+                if(i < 1 || i > 4) return Operation.IGNORED;
                 trackLoaded(playlist.getTracks().get(i - 1), event.getAuthor(), false);
-                return true;
+                return Operation.COMPLETED;
             }, "\u0031\u20e3", "\u0032\u20e3", "\u0033\u20e3", "\u0034\u20e3");
         } else {
             long time = 0;

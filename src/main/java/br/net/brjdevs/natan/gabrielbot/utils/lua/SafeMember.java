@@ -43,4 +43,9 @@ class SafeMember {
     public List<SafeRole> getRoles() {
         return member.getRoles().stream().map(SafeRole::new).collect(Collectors.toList());
     }
+
+    @Override
+    public String toString() {
+        return member.toString();
+    }
 }

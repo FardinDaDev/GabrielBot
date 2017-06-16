@@ -6,57 +6,55 @@ import net.dv8tion.jda.core.entities.Guild;
 import java.util.List;
 import java.util.stream.Collectors;
 
-class SafeGuild extends SafeISnowflake {
-    private final Guild guild;
+class SafeGuild extends SafeISnowflake<Guild> {
     private final SafeChannel channel;
 
     SafeGuild(Guild guild, SafeChannel channel) {
         super(guild);
-        this.guild = guild;
         this.channel = channel;
     }
 
     public String getName() {
-        return guild.getName();
+        return snowflake.getName();
     }
 
     public Guild.ExplicitContentLevel getExplicitContentLevel() {
-        return guild.getExplicitContentLevel();
+        return snowflake.getExplicitContentLevel();
     }
 
     public Region getRegion() {
-        return guild.getRegion();
+        return snowflake.getRegion();
     }
 
     public List<SafeChannel> getTextChannels() {
-        return guild.getTextChannels().stream().map(c->c.getIdLong() == channel.getIdLong() ? channel : new SafeChannel(c, 0)).collect(Collectors.toList());
+        return snowflake.getTextChannels().stream().map(c->c.getIdLong() == channel.getIdLong() ? channel : new SafeChannel(c, 0)).collect(Collectors.toList());
     }
 
     public List<SafeRole> getRoles() {
-        return guild.getRoles().stream().map(SafeRole::new).collect(Collectors.toList());
+        return snowflake.getRoles().stream().map(SafeRole::new).collect(Collectors.toList());
     }
 
     public List<SafeMember> getMembers() {
-        return guild.getMembers().stream().map(SafeMember::new).collect(Collectors.toList());
+        return snowflake.getMembers().stream().map(SafeMember::new).collect(Collectors.toList());
     }
 
     public SafeMember getOwner() {
-        return new SafeMember(guild.getOwner());
+        return new SafeMember(snowflake.getOwner());
     }
 
     public List<SafeMember> getMembersByName(String name, boolean ignoreCase) {
-        return guild.getMembersByName(name, ignoreCase).stream().map(SafeMember::new).collect(Collectors.toList());
+        return snowflake.getMembersByName(name, ignoreCase).stream().map(SafeMember::new).collect(Collectors.toList());
     }
 
     public List<SafeMember> getMembersByNickname(String name, boolean ignoreCase) {
-        return guild.getMembersByNickname(name, ignoreCase).stream().map(SafeMember::new).collect(Collectors.toList());
+        return snowflake.getMembersByNickname(name, ignoreCase).stream().map(SafeMember::new).collect(Collectors.toList());
     }
 
     public List<SafeMember> getMembersByEffectiveName(String name, boolean ignoreCase) {
-        return guild.getMembersByEffectiveName(name, ignoreCase).stream().map(SafeMember::new).collect(Collectors.toList());
+        return snowflake.getMembersByEffectiveName(name, ignoreCase).stream().map(SafeMember::new).collect(Collectors.toList());
     }
 
     public String getIconUrl() {
-        return guild.getIconUrl();
+        return snowflake.getIconUrl();
     }
 }

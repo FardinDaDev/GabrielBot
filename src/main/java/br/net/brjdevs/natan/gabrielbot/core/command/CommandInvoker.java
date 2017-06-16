@@ -19,9 +19,15 @@ interface CommandInvoker {
         return s.length == 1 ? new String[0] : s[1].split(" ");
     }
 
+    static String getContent(GuildMessageReceivedEvent event) {
+        String[] s = event.getMessage().getRawContent().split(" ", 2);
+        return s.length == 1 ? "" : s[1];
+    }
+
     @SuppressWarnings("unchecked")
     default void run(GuildMessageReceivedEvent event, boolean advancedSplit, Map<String, ?> map) {
         ((Map)map).put("args", advancedSplit ? advancedSplit(event) : split(event));
+        ((Map)map).put("input", getContent(event));
         invoke(map);
     }
 }

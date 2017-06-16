@@ -4,10 +4,10 @@ import net.dv8tion.jda.core.entities.ISnowflake;
 
 import java.time.OffsetDateTime;
 
-class SafeISnowflake {
-    private final ISnowflake snowflake;
+class SafeISnowflake<T extends ISnowflake> {
+    protected final T snowflake;
 
-    SafeISnowflake(ISnowflake snowflake) {
+    SafeISnowflake(T snowflake) {
         this.snowflake = snowflake;
     }
 
@@ -21,5 +21,10 @@ class SafeISnowflake {
 
     public OffsetDateTime getCreationTime() {
         return snowflake.getCreationTime();
+    }
+
+    @Override
+    public String toString() {
+        return snowflake.toString();
     }
 }

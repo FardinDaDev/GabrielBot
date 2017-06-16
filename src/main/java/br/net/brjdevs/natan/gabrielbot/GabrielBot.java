@@ -78,12 +78,12 @@ public class GabrielBot {
         Reflections r = new Reflections("br.net.brjdevs.natan.gabrielbot.commands", new SubTypesScanner(false));
 
         registry = new CommandRegistry(GabrielBot.class.getClassLoader());
-        long l = System.nanoTime();
+        long l = System.currentTimeMillis();
         for(String name : r.getAllTypes()) {
             registry.register(Class.forName(name));
         }
-        long ll = System.nanoTime()-l;
-        LOGGER.info("Registered {} commands in {} ns ({} ms)", registry.commands().size(), ll, ll/1_000_000);
+        long ll = System.currentTimeMillis()-l;
+        LOGGER.info("Registered {} commands in {} ms", registry.commands().size(), ll);
 
         Thread dataSaver = new Thread(()->{
             while(true) {

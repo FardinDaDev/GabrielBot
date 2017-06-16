@@ -45,7 +45,7 @@ public class Utils {
         long minutes = TimeUnit.MILLISECONDS.toMinutes(time) % TimeUnit.HOURS.toMinutes(1);
         long seconds = TimeUnit.MILLISECONDS.toSeconds(time) % TimeUnit.MINUTES.toSeconds(1);
         return (hours == 0 ? "" : hours + ":") +
-                (minutes == 0 ? "" : minutes + ":") +
+                (minutes == 0 ? "0:" : minutes + ":") +
                 (seconds == 0 ? "" : seconds + "").replaceAll(":$", "");
     }
 
@@ -59,5 +59,18 @@ public class Utils {
         }
 
         return map;
+    }
+
+    public static String repeat(String sequence, int times) {
+        StringBuilder sb = new StringBuilder(sequence.length() * times);
+        for(int i = 0; i < times; i++) sb.append(sequence);
+        return sb.toString();
+    }
+
+    public static String progressBar(double percentage, int width) {
+        int filled = (int)(width*percentage);
+        int empty = width-filled;
+
+        return "▏" + repeat("█", filled) + repeat("  ", empty) + "▕";
     }
 }

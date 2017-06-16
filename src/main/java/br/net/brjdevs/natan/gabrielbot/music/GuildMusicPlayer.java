@@ -88,6 +88,9 @@ public class GuildMusicPlayer implements AudioSendHandler {
         player.stopTrack();
         player.destroy();
         GabrielBot.getInstance().removePlayer(guildId);
+        if(GabrielBot.getInstance().getPlayer(guildId) != null) {
+            GabrielBot.LOGGER.error("Player was not removed: " + this + " " + guildId);
+        }
     }
 
     private void leaveTask() {

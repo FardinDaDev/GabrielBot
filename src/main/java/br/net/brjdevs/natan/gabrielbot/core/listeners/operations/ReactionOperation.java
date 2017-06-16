@@ -5,22 +5,14 @@ import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveAllEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveEvent;
 
 @FunctionalInterface
-public interface ReactionOperation {
-    boolean add(MessageReactionAddEvent event);
+public interface ReactionOperation extends Operation {
+    int add(MessageReactionAddEvent event);
 
-    default boolean remove(MessageReactionRemoveEvent event) {
-        return false;
+    default int remove(MessageReactionRemoveEvent event) {
+        return IGNORED;
     }
 
-    default boolean removeAll(MessageReactionRemoveAllEvent event) {
-        return false;
-    }
-
-    default void onCancel() {
-
-    }
-
-    default void onExpire() {
-
+    default int removeAll(MessageReactionRemoveAllEvent event) {
+        return IGNORED;
     }
 }

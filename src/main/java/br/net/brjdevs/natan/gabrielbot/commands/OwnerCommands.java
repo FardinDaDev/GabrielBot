@@ -142,6 +142,10 @@ public class OwnerCommands {
             JedisDataManager jdm = (JedisDataManager) GabrielData.guilds();
             int[] i = new int[1];
             GabrielBot.getInstance().streamPlayers().forEach(p -> {
+                if(p.scheduler.currentTrack() == null) {
+                    p.leave();
+                    return;
+                }
                 p.player.setPaused(true);
                 List<Track> allTracks = new ArrayList<>();
                 allTracks.add(p.scheduler.currentTrack());

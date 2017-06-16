@@ -1,6 +1,7 @@
 package br.net.brjdevs.natan.gabrielbot.utils;
 
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.InteractiveOperations;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.Operation;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.Permission;
@@ -36,16 +37,16 @@ public class DiscordUtils {
 
     public static boolean selectInt(GuildMessageReceivedEvent event, int max, IntConsumer valueConsumer) {
         return InteractiveOperations.create(event.getChannel(), 10, (e) -> {
-            if (!e.getAuthor().equals(event.getAuthor())) return false;
+            if (!e.getAuthor().equals(event.getAuthor())) return Operation.IGNORED;
 
             try {
                 int choose = Integer.parseInt(e.getMessage().getContent());
-                if (choose < 1 || choose >= max) return false;
+                if (choose < 1 || choose >= max) return Operation.IGNORED;
                 valueConsumer.accept(choose);
-                return true;
+                return Operation.COMPLETED;
             } catch (Exception ignored) {
+                return Operation.IGNORED;
             }
-            return false;
         }) != null;
     }
 
@@ -97,7 +98,7 @@ public class DiscordUtils {
         AtomicInteger index = new AtomicInteger();
         Message m = event.getChannel().sendMessage(embeds.get(0)).complete();
         return ReactionOperations.create(m, timeoutSeconds, (e)->{
-            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return Operation.IGNORED;
             switch(e.getReactionEmote().getName()) {
                 case "\u2b05": //left arrow
                     if(index.get() == 0) break;
@@ -111,7 +112,7 @@ public class DiscordUtils {
             if(event.getGuild().getSelfMember().hasPermission(e.getTextChannel(), Permission.MESSAGE_MANAGE)) {
                 e.getReaction().removeReaction(e.getUser()).queue();
             }
-            return false;
+            return Operation.RESET_TIMEOUT;
         }, "\u2b05", "\u27a1");
     }
 
@@ -151,7 +152,7 @@ public class DiscordUtils {
         }
         Message m = event.getChannel().sendMessage(embeds.get(0)).complete();
         return ReactionOperations.create(m, timeoutSeconds, (e)->{
-            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return Operation.IGNORED;
             switch(e.getReactionEmote().getName()) {
                 case "\u2b05": //left arrow
                     if(index.get() == 0) break;
@@ -165,7 +166,7 @@ public class DiscordUtils {
             if(event.getGuild().getSelfMember().hasPermission(e.getTextChannel(), Permission.MESSAGE_MANAGE)) {
                 e.getReaction().removeReaction(e.getUser()).queue();
             }
-            return false;
+            return Operation.RESET_TIMEOUT;
         }, "\u2b05", "\u27a1");
     }
 
@@ -201,7 +202,7 @@ public class DiscordUtils {
         }
         Message m = event.getChannel().sendMessage(supplier.apply(1, total).setDescription(embeds.get(0)).build()).complete();
         return ReactionOperations.create(m, timeoutSeconds, (e)->{
-            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+            if(!canEveryoneUse && e.getUser().getIdLong() != event.getAuthor().getIdLong()) return Operation.IGNORED;
             switch(e.getReactionEmote().getName()) {
                 case "\u2b05": {//left arrow
                     if (index.get() == 0) break;
@@ -217,7 +218,7 @@ public class DiscordUtils {
             if(event.getGuild().getSelfMember().hasPermission(e.getTextChannel(), Permission.MESSAGE_MANAGE)) {
                 e.getReaction().removeReaction(e.getUser()).queue();
             }
-            return false;
+            return Operation.RESET_TIMEOUT;
         }, "\u2b05", "\u27a1");
     }
 }

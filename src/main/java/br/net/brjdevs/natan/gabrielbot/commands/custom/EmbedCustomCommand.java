@@ -126,7 +126,7 @@ public class EmbedCustomCommand extends CustomCommand {
 
     @Override
     public String getRaw() {
-        return json;
+        return PREFIX_EMBED + json;
     }
 
 }

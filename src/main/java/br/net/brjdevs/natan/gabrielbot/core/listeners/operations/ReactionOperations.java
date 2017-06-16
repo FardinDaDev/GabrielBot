@@ -19,8 +19,8 @@ import java.util.function.Consumer;
 public final class ReactionOperations {
     private static final EventListener LISTENER = new ReactionListener();
 
-    private static final ExpiringMap<Long, Operation> OPERATIONS = ExpiringMap.<Long, Operation>builder()
-            .asyncExpirationListener((key, value) -> ((Operation)value).operation.onExpire())
+    private static final ExpiringMap<Long, RunningOperation> OPERATIONS = ExpiringMap.<Long, RunningOperation>builder()
+            .asyncExpirationListener((key, value) -> ((RunningOperation)value).operation.onExpire())
             .variableExpiration()
             .build();
 
@@ -30,7 +30,7 @@ public final class ReactionOperations {
     }
 
     public static Future<Void> get(long messageId) {
-        Operation o = OPERATIONS.get(messageId);
+        RunningOperation o = OPERATIONS.get(messageId);
         return o == null ? null : o.future;
     }
 
@@ -56,9 +56,9 @@ public final class ReactionOperations {
     public static Future<Void> createOrGet(long messageId, long timeoutSeconds, ReactionOperation operation) {
         if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
         if(operation == null) throw new NullPointerException("operation");
-        Operation o = OPERATIONS.get(messageId);
+        RunningOperation o = OPERATIONS.get(messageId);
         if(o != null) return o.future;
-        o = new Operation(operation, new OperationFuture(messageId));
+        o = new RunningOperation(operation, new OperationFuture(messageId));
         OPERATIONS.put(messageId, o, timeoutSeconds, TimeUnit.SECONDS);
         return o.future;
     }
@@ -85,9 +85,9 @@ public final class ReactionOperations {
     public static Future<Void> create(long messageId, long timeoutSeconds, ReactionOperation operation) {
         if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
         if(operation == null) throw new NullPointerException("operation");
-        Operation o = OPERATIONS.get(messageId);
+        RunningOperation o = OPERATIONS.get(messageId);
         if(o != null) return null;
-        o = new Operation(operation, new OperationFuture(messageId));
+        o = new RunningOperation(operation, new OperationFuture(messageId));
         OPERATIONS.put(messageId, o, timeoutSeconds, TimeUnit.SECONDS);
         return o.future;
     }
@@ -109,12 +109,13 @@ public final class ReactionOperations {
                 MessageReactionAddEvent event = (MessageReactionAddEvent) e;
                 if(event.getReaction().isSelf()) return;
                 long messageId = event.getMessageIdLong();
-                Operation o = OPERATIONS.get(messageId);
+                RunningOperation o = OPERATIONS.get(messageId);
                 if(o == null) return;
-                if(o.operation.add(event)) {
+                int i = o.operation.add(event);
+                if(i == Operation.COMPLETED) {
                     OPERATIONS.remove(messageId);
                     o.future.complete(null);
-                } else {
+                } else if(i == Operation.RESET_TIMEOUT) {
                     OPERATIONS.resetExpiration(messageId);
                 }
                 return;
@@ -123,12 +124,13 @@ public final class ReactionOperations {
                 MessageReactionRemoveEvent event = (MessageReactionRemoveEvent) e;
                 if(event.getReaction().isSelf()) return;
                 long messageId = event.getMessageIdLong();
-                Operation o = OPERATIONS.get(messageId);
+                RunningOperation o = OPERATIONS.get(messageId);
                 if(o == null) return;
-                if(o.operation.remove(event)) {
+                int i = o.operation.remove(event);
+                if(i == Operation.COMPLETED) {
                     OPERATIONS.remove(messageId);
                     o.future.complete(null);
-                } else {
+                } else if(i == Operation.RESET_TIMEOUT) {
                     OPERATIONS.resetExpiration(messageId);
                 }
                 return;
@@ -136,23 +138,24 @@ public final class ReactionOperations {
             if(e instanceof MessageReactionRemoveAllEvent) {
                 MessageReactionRemoveAllEvent event = (MessageReactionRemoveAllEvent)e;
                 long messageId = event.getMessageIdLong();
-                Operation o = OPERATIONS.get(messageId);
+                RunningOperation o = OPERATIONS.get(messageId);
                 if(o == null) return;
-                if(o.operation.removeAll(event)) {
+                int i = o.operation.removeAll(event);
+                if(i == Operation.COMPLETED) {
                     OPERATIONS.remove(messageId);
                     o.future.complete(null);
-                } else {
+                } else if(i == Operation.RESET_TIMEOUT) {
                     OPERATIONS.resetExpiration(messageId);
                 }
             }
         }
     }
 
-    private static class Operation {
+    private static class RunningOperation {
         final ReactionOperation operation;
         final OperationFuture future;
 
-        Operation(ReactionOperation operation, OperationFuture future) {
+        RunningOperation(ReactionOperation operation, OperationFuture future) {
             this.operation = operation;
             this.future = future;
         }
@@ -168,7 +171,7 @@ public final class ReactionOperations {
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             super.cancel(mayInterruptIfRunning);
-            Operation o = OPERATIONS.remove(id);
+            RunningOperation o = OPERATIONS.remove(id);
             if(o == null) return false;
             o.operation.onCancel();
             return true;

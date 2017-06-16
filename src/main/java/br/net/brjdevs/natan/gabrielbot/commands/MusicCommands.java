@@ -6,6 +6,8 @@ import br.net.brjdevs.natan.gabrielbot.core.command.Command;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandReference;
+import br.net.brjdevs.natan.gabrielbot.core.data.Config;
+import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.music.GuildMusicPlayer;
 import br.net.brjdevs.natan.gabrielbot.music.Track;
 import br.net.brjdevs.natan.gabrielbot.utils.DiscordUtils;
@@ -34,6 +36,7 @@ public class MusicCommands {
             category = CommandCategory.MUSIC
     )
     public static void play(@Argument("this") CommandReference thiz, @Argument("event")GuildMessageReceivedEvent event, @Argument("args") String[] args, @Argument("channel") TextChannel channel, @Argument("guild") Guild guild) {
+        if(checkEnabled(event)) return;
         if(args.length == 0) {
             thiz.onHelp(event);
             return;
@@ -180,7 +183,7 @@ public class MusicCommands {
         boolean dj = isDJ(event.getMember());
         if(dj) {
             gmp.getTextChannel().sendMessage("The DJ decided to stop").queue();
-            GabrielBot.getInstance().removePlayer(gmp.guildId);
+            GabrielBot.getInstance().interruptPlayer(gmp.guildId);
         } else {
             channel.sendMessage("You are not a DJ").queue();
         }
@@ -202,6 +205,13 @@ public class MusicCommands {
         Track current = gmp.scheduler.currentTrack();
         Member m = guild.getMemberById(current.dj);
         channel.sendMessage("Now playing `" + current.track.getInfo().title + "`, added by " + (m == null ? "<@" + current.dj + ">" : m.getEffectiveName())).queue();
+    }
+
+    private static boolean checkEnabled(GuildMessageReceivedEvent event) {
+        Config config = GabrielData.config();
+        if(config.music) return false;
+        event.getChannel().sendMessage(config.musicDisableReason).queue();
+        return true;
     }
 
     private static boolean isDJ(Member member) {

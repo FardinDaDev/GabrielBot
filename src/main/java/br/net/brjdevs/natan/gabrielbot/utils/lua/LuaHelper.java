@@ -16,6 +16,7 @@ import org.luaj.vm2.lib.LibFunction;
 import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.StringLib;
 import org.luaj.vm2.lib.TableLib;
+import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.luaj.vm2.lib.jse.CoerceJavaToLua;
@@ -26,7 +27,7 @@ import org.luaj.vm2.lib.jse.JseMathLib;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.stream.LongStream;
 
 public class LuaHelper {
     private static final String INSTANCE_KEY = "instance";
@@ -91,7 +92,7 @@ public class LuaHelper {
         if(args.length != 0) globals.set("args", new LuaTable(null, args, null));
         if(event != null) {
             SafeGuildMessageReceivedEvent e = new SafeGuildMessageReceivedEvent(event, maxMessages);
-            globals.set("user", coerce(e.getAuthor()));
+            globals.set("author", coerce(e.getAuthor()));
             globals.set("channel", coerce(e.getChannel()));
             globals.set("member", coerce(e.getMember()));
             globals.set("guild", coerce(e.getGuild()));
@@ -120,7 +121,8 @@ public class LuaHelper {
             }
         });
 
-        globals.set("stream", new VarArgFunction() {
+        LuaTable stream = new LuaTable();
+        stream.set("of", new VarArgFunction() {
             @Override
             public Varargs onInvoke(Varargs args) {
                 LuaValue[] values = new LuaValue[args.narg()];
@@ -130,6 +132,21 @@ public class LuaHelper {
                 return coerce(Arrays.stream(values).map(v->getInstance(v, Object.class)));
             }
         });
+        stream.set("range", new TwoArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg1, LuaValue arg2) {
+                long l1 = arg1.checklong();
+                long l2 = arg2.checklong();
+                if(l1 > l2) {
+                    long temp = l1;
+                    l1 = l2;
+                    l2 = temp;
+                }
+                return coerce(LongStream.range(l1, l2).mapToObj(Long::valueOf));
+            }
+        });
+
+        globals.set("stream", proxyTable(stream, true));
     }
 
     public static CycleLimiter getLimiter(Globals globals) {
@@ -141,12 +158,27 @@ public class LuaHelper {
         throw new IllegalArgumentException("Provided globals were not created using setup()");
     }
 
-    private static LuaValue getInstance(LuaValue t) {
-        return t.istable() ? t.getmetatable().istable() ? t.getmetatable().get(INSTANCE_KEY) : LuaValue.NIL : LuaValue.NIL;
+    public static LuaTable proxyTable(LuaTable original, boolean readonly) {
+        LuaTable t = new LuaTable();
+        LuaTable mt = new LuaTable();
+        mt.set("__index", original);
+        if(readonly) mt.set("__newindex", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return error("Cannot be modified");
+            }
+        });
+        t.setmetatable(mt);
+        return t;
+    }
+
+    static LuaValue getInstance(LuaValue t) {
+        return t.istable() ? t.getmetatable() != null ? t.getmetatable().istable() ? t.getmetatable().get(INSTANCE_KEY) : LuaValue.NIL : LuaValue.NIL : LuaValue.NIL;
     }
 
     @SuppressWarnings("unchecked")
-    static <T> T getInstance(LuaValue lua, Class<T> clazz) {
+    public static <T> T getInstance(LuaValue lua, Class<T> clazz) {
+        if(lua == null) return null;
         if(lua.isnil()) return null;
         if(lua.istable()) {
             LuaValue mt = lua.getmetatable();
@@ -157,7 +189,7 @@ public class LuaHelper {
         return (T)CoerceLuaToJava.coerce(lua, clazz);
     }
 
-    static LuaValue toLua(Object obj) {
+    public static LuaValue toLua(Object obj) {
         LuaValue v = CoerceJavaToLua.coerce(obj);
         return v.isuserdata() ? LuaHelper.coerce(obj) : v;
     }
@@ -192,7 +224,8 @@ public class LuaHelper {
             Class<?> ret = m.getReturnType();
             while(ret.isArray()) ret = ret.getComponentType();
             if(ret.getName().startsWith("java.lang.reflect.") || ret.getName().startsWith("java.lang.annotation.") || ret == ClassLoader.class) continue;
-
+            if(m.getDeclaringClass() == net.dv8tion.jda.core.entities.MessageChannel.class && m.getName().equals("sendMessage") && m.getParameterTypes()[0] != String.class) continue;
+            if(m.getDeclaringClass() == net.dv8tion.jda.core.requests.RestAction.class && m.getName().equals("queue") && m.getParameterTypes().length != 2) continue;
 
             m.setAccessible(true);
             object.set(m.getName(), coerce(lambdaLoader, object, obj, m));
@@ -273,12 +306,9 @@ public class LuaHelper {
                     Object o = method.invoke(instance, args);
                     if(o == instance && object != null) return object;
                     if(o == null) return NIL;
-                    if(o instanceof Stream) {
-                        //return coerce(new LuaStream((Stream)o));
-                    }
                     LuaValue v = CoerceJavaToLua.coerce(o);
                     if(v.isuserdata()) {
-                        return coerce(o);
+                        return coerce(lambdaLoader, o);
                     }
                     return v;
                 } catch(InvocationTargetException e) {

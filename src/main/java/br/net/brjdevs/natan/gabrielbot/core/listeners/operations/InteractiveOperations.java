@@ -14,8 +14,8 @@ import java.util.concurrent.TimeUnit;
 public class InteractiveOperations {
     private static final EventListener LISTENER = new InteractiveListener();
 
-    private static final ExpiringMap<Long, Operation> OPERATIONS = ExpiringMap.<Long, Operation>builder()
-            .asyncExpirationListener((key, value) -> ((Operation)value).operation.onExpire())
+    private static final ExpiringMap<Long, RunningOperation> OPERATIONS = ExpiringMap.<Long, RunningOperation>builder()
+            .asyncExpirationListener((key, value) -> ((RunningOperation)value).operation.onExpire())
             .variableExpiration()
             .build();
 
@@ -24,7 +24,7 @@ public class InteractiveOperations {
     }
 
     public static Future<Void> get(long channelId) {
-        Operation o = OPERATIONS.get(channelId);
+        RunningOperation o = OPERATIONS.get(channelId);
         return o == null ? null : o.future;
     }
 
@@ -35,9 +35,9 @@ public class InteractiveOperations {
     public static Future<Void> createOrGet(long channelId, long timeoutSeconds, InteractiveOperation operation) {
         if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
         if(operation == null) throw new NullPointerException("operation");
-        Operation o = OPERATIONS.get(channelId);
+        RunningOperation o = OPERATIONS.get(channelId);
         if(o != null) return o.future;
-        o = new Operation(operation, new OperationFuture(channelId));
+        o = new RunningOperation(operation, new OperationFuture(channelId));
         OPERATIONS.put(channelId, o, timeoutSeconds, TimeUnit.SECONDS);
         return o.future;
     }
@@ -49,9 +49,9 @@ public class InteractiveOperations {
     public static Future<Void> create(long channelId, long timeoutSeconds, InteractiveOperation operation) {
         if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
         if(operation == null) throw new NullPointerException("operation");
-        Operation o = OPERATIONS.get(channelId);
+        RunningOperation o = OPERATIONS.get(channelId);
         if(o != null) return null;
-        o = new Operation(operation, new OperationFuture(channelId));
+        o = new RunningOperation(operation, new OperationFuture(channelId));
         OPERATIONS.put(channelId, o, timeoutSeconds, TimeUnit.SECONDS);
         return o.future;
     }
@@ -68,22 +68,23 @@ public class InteractiveOperations {
             GuildMessageReceivedEvent event = (GuildMessageReceivedEvent)e;
             if(event.getAuthor().equals(event.getJDA().getSelfUser())) return;
             long channelId = event.getChannel().getIdLong();
-            Operation o = OPERATIONS.get(channelId);
+            RunningOperation o = OPERATIONS.get(channelId);
             if(o == null) return;
-            if(o.operation.run(event)) {
+            int i = o.operation.run(event);
+            if(i == Operation.COMPLETED) {
                 OPERATIONS.remove(channelId);
                 o.future.complete(null);
-            } else {
+            } else if(i == Operation.RESET_TIMEOUT) {
                 OPERATIONS.resetExpiration(channelId);
             }
         }
     }
 
-    private static class Operation {
+    private static class RunningOperation {
         final InteractiveOperation operation;
         final OperationFuture future;
 
-        Operation(InteractiveOperation operation, OperationFuture future) {
+        RunningOperation(InteractiveOperation operation, OperationFuture future) {
             this.operation = operation;
             this.future = future;
         }
@@ -98,7 +99,7 @@ public class InteractiveOperations {
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            Operation o = OPERATIONS.remove(id);
+            RunningOperation o = OPERATIONS.remove(id);
             if(o == null) return false;
             o.operation.onCancel();
             return true;

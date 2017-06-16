@@ -5,10 +5,16 @@ import br.net.brjdevs.natan.gabrielbot.core.command.Command;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandReference;
+import br.net.brjdevs.natan.gabrielbot.utils.Utils;
 import br.net.brjdevs.natan.gabrielbot.utils.commands.Jokes;
+import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
+
+import java.util.List;
 
 public class FunCommands {
     @Command(
@@ -22,6 +28,47 @@ public class FunCommands {
     )
     public static void joke(@Argument("channel") TextChannel channel, @Argument("args") String[] args, @Argument("author") User author) {
         channel.sendMessage(Jokes.getJoke(args.length == 0 ? author.getAsMention() : String.join(" ", args))).queue();
+    }
+
+    @Command(
+            name = "love",
+            description = "Calculates how much two people love each other <3",
+            usage = "`>>love @Mention`: Calculates love between you and the mentioned user\n" +
+                    "`>>love @FirstPerson @SecondPerson`: Calculates love between the two mentioned persons",
+            permission = CommandPermission.USER,
+            category = CommandCategory.FUN
+    )
+    public static void love(@Argument("channel") TextChannel channel, @Argument("member") Member member, @Argument("message") Message message) {
+        List<User> mentioned = message.getMentionedUsers();
+        if(mentioned.size() == 0) {
+            channel.sendMessage("You have to mention someone!").queue();
+            return;
+        }
+        User first, second;
+        if(mentioned.size() == 1) {
+            first = member.getUser();
+            second = mentioned.get(0);
+        } else {
+            first = mentioned.get(0);
+            second = mentioned.get(1);
+        }
+        int sumFirst = first.getAsMention().chars().sum();
+        int sumSecond = second.getAsMention().chars().sum();
+
+        int diff = Math.abs((sumFirst % 101) - (sumSecond % 101));
+
+        int love = 100-diff;
+
+        String heart = love > 80 ? "\uD83D\uDC96" : love > 50 ? "\uD83D\uDC93" : love > 30 ? "\u2665" : "\uD83D\uDC94";
+
+        channel.sendMessage(new EmbedBuilder()
+                .setTitle("\u2763 Love Calculator \u2763")
+                .appendDescription(heart + " " + first.getName() + "\n")
+                .appendDescription(heart + " " + second.getName() + "\n")
+                .appendDescription("\n")
+                .appendDescription(love + "% " + Utils.progressBar((double)love/100, 40))
+                .setColor(member.getColor())
+                .build()).queue();
     }
 
     @Command(

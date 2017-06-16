@@ -2,23 +2,20 @@ package br.net.brjdevs.natan.gabrielbot.utils.lua;
 
 import net.dv8tion.jda.core.entities.Message;
 
-class SafeMessage extends SafeISnowflake {
-    private final Message message;
-
+class SafeMessage extends SafeISnowflake<Message> {
     SafeMessage(Message message) {
         super(message);
-        this.message = message;
     }
 
     public String getContent() {
-        return message.getContent();
+        return snowflake.getContent();
     }
 
     public String getRawContent() {
-        return message.getRawContent();
+        return snowflake.getRawContent();
     }
 
     public String getStrippedContent() {
-        return message.getStrippedContent();
+        return snowflake.getStrippedContent();
     }
 }

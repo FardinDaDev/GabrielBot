@@ -38,7 +38,7 @@ public class Shard {
         builder = new JDABuilder(AccountType.BOT)
                 .setToken(token)
                 .setWebSocketTimeout(10000)
-                .setAudioEnabled(true)
+                .setAudioEnabled(GabrielData.config().music)
                 .setAudioSendFactory(nas ? new NativeAudioSendFactory() : new DefaultSendFactory())
                 .setAutoReconnect(true)
                 .setCorePoolSize(10)
@@ -67,21 +67,39 @@ public class Shard {
 
     public void postStats() {
         if(GabrielBot.DEBUG) return;
-        String token = GabrielData.config().dbotsToken;
-        if(token == null || token.isEmpty()) return;
+
         JSONObject payload = new JSONObject().put("server_count", jda.getGuilds().size());
         JDA.ShardInfo info = jda.getShardInfo();
         if(info != null) {
             payload.put("shard_id", info.getShardId()).put("shard_count", info.getShardTotal());
         }
-        try {
-            Unirest.post("https://discordbots.org/api/bots/" + jda.getSelfUser().getId() + "/stats")
-                    .header("Authorization", token)
-                    .header("Content-Type", "application/json")
-                    .body(payload)
-                    .asJson();
-        } catch(UnirestException e) {
-            logger.error("Error posting stats to discordbots.org", e.getCause());
+
+        dbots: {
+            String token = GabrielData.config().dbotsToken;
+            if(token == null || token.isEmpty()) break dbots;
+            try {
+                Unirest.post("https://discordbots.org/api/bots/" + jda.getSelfUser().getId() + "/stats")
+                        .header("Authorization", token)
+                        .header("Content-Type", "application/json")
+                        .body(payload)
+                        .asJson();
+            } catch(UnirestException e) {
+                logger.error("Error posting stats to discordbots.org", e.getCause());
+            }
+        }
+
+        botspw: {
+            String token = GabrielData.config().botsPwToken;
+            if(token == null || token.isEmpty()) break botspw;
+            try {
+                Unirest.post("https://bots.discord.pw/api/bots/" + jda.getSelfUser().getId() + "/stats")
+                        .header("Authorization", token)
+                        .header("Content-Type", "application/json")
+                        .body(payload)
+                        .asJson();
+            } catch(UnirestException e) {
+                logger.error("Error posting stats to bots.discord.pw", e.getCause());
+            }
         }
     }
 

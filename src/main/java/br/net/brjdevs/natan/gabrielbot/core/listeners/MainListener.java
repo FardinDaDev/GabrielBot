@@ -6,7 +6,10 @@ import br.net.brjdevs.natan.gabrielbot.core.data.GabrielData;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import br.net.brjdevs.natan.gabrielbot.utils.stats.MessageStats;
 import net.dv8tion.jda.core.Permission;
-import net.dv8tion.jda.core.entities.*;
+import net.dv8tion.jda.core.entities.ChannelType;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.Event;
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent;
@@ -29,6 +32,10 @@ public class MainListener implements EventListener {
             if(!tc.canTalk()) return;
             if(!PermissionUtil.checkPermission(tc, tc.getGuild().getSelfMember(), Permission.MESSAGE_EMBED_LINKS)) {
                 tc.sendMessage("I need the Embed Links permission").queue();
+                return;
+            }
+            if(((GuildMessageReceivedEvent)event).getMessage().getRawContent().equals("f")) {
+                ((GuildMessageReceivedEvent)event).getChannel().sendMessage("You have paid your respects. \uD83C\uDF46").queue();
                 return;
             }
             try {

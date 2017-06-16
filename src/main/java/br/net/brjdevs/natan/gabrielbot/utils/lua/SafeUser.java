@@ -2,31 +2,28 @@ package br.net.brjdevs.natan.gabrielbot.utils.lua;
 
 import net.dv8tion.jda.core.entities.User;
 
-class SafeUser extends SafeISnowflake {
-    private final User user;
-
+class SafeUser extends SafeISnowflake<User> {
     SafeUser(User user) {
         super(user);
-        this.user = user;
     }
 
     public String getName() {
-        return user.getName();
+        return snowflake.getName();
     }
 
     public String getDiscriminator() {
-        return user.getDiscriminator();
+        return snowflake.getDiscriminator();
     }
 
     public String getAvatarUrl() {
-        return user.getEffectiveAvatarUrl();
+        return snowflake.getEffectiveAvatarUrl();
     }
 
     public boolean isBot() {
-        return user.isBot();
+        return snowflake.isBot();
     }
 
     public String getAsMention() {
-        return user.getAsMention();
+        return snowflake.getAsMention();
     }
 }

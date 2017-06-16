@@ -25,7 +25,7 @@ public class DBotsCommand {
                     "`>>bots owner <id>`: gets a bot by owner id\n" +
                     "`>>bots prefix <prefix>`: gets a bot by prefix",
             permission = CommandPermission.USER,
-            category = CommandCategory.MISC
+            category = CommandCategory.UTIL
     )
     public static void dbots(@Argument("this") CommandReference thiz, @Argument("event") GuildMessageReceivedEvent event, @Argument("channel") TextChannel channel, @Argument("args") String[] args) {
         if (args.length < 2) {
@@ -91,7 +91,7 @@ public class DBotsCommand {
                 .addField("Certified", "" + info.certified, true)
                 .setThumbnail(info.avatarUrl)
                 .setColor(event.getMember().getColor())
-                .setFooter("Best match out of " + infos.length, null)
+                .setFooter(infos.length > 1 ? "Best match out of " + infos.length : "Only bot that matches", null)
                 .build();
 
     }

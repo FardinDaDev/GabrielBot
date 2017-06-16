@@ -6,6 +6,7 @@ import br.net.brjdevs.natan.gabrielbot.core.command.Command;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandCategory;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandPermission;
 import br.net.brjdevs.natan.gabrielbot.core.command.CommandReference;
+import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.Operation;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperation;
 import br.net.brjdevs.natan.gabrielbot.core.listeners.operations.ReactionOperations;
 import br.net.brjdevs.natan.gabrielbot.utils.PrologBuilder;
@@ -95,33 +96,33 @@ public class MiscCommands {
         if (!event.getGuild().getSelfMember().hasPermission(channel, Permission.MESSAGE_MANAGE)) {
             AtomicReference<ReactionOperation> back = new AtomicReference<>();
             op = (e) -> {
-                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return Operation.IGNORED;
                 Pair<String, MessageEmbed> p = embeds.get(e.getReactionEmote().getName());
                 if (p != null) {
                     e.getTextChannel().deleteMessageById(e.getMessageIdLong()).queue();
                     e.getChannel().sendMessage(p.getValue()).queue(msg -> {
                         ReactionOperations.create(msg, 30, back.get(), "\u2b05");
                     });
-                    return true;
+                    return Operation.COMPLETED;
                 }
-                return false;
+                return Operation.IGNORED;
             };
             back.set((e) -> {
-                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return Operation.IGNORED;
                 if (e.getReactionEmote().getName().equals("\u2b05")) {
                     e.getTextChannel().deleteMessageById(e.getMessageIdLong()).queue();
                     Message msg = e.getChannel().sendMessage(eb.build()).complete();
                     ReactionOperations.create(msg, 30, op, embeds.keySet().toArray(new String[0]));
-                    return true;
+                    return Operation.COMPLETED;
                 }
-                return false;
+                return Operation.IGNORED;
             });
             ReactionOperations.create(m, 30, op, embeds.keySet().toArray(new String[0]));
         } else {
             AtomicReference<Future<Void>> future = new AtomicReference<>();
             AtomicReference<ReactionOperation> back = new AtomicReference<>();
             op = (e) -> {
-                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return Operation.IGNORED;
                 Emote emote = e.getReactionEmote().getEmote();
                 String s = emote == null ? e.getReactionEmote().getName() : emote.getAsMention();
                 Pair<String, MessageEmbed> p = embeds.get(s);
@@ -132,12 +133,12 @@ public class MiscCommands {
                             future.set(ReactionOperations.create(m, 30, back.get(), "\u2b05"));
                         });
                     });
-                    return true;
+                    return Operation.COMPLETED;
                 }
-                return false;
+                return Operation.IGNORED;
             };
             back.set((e) -> {
-                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return false;
+                if (e.getUser().getIdLong() != event.getAuthor().getIdLong()) return Operation.IGNORED;
                 if (e.getReactionEmote().getName().equals("\u2b05")) {
                     future.get().cancel(true);
                     m.editMessage(eb.build()).queueAfter(250, TimeUnit.MILLISECONDS, done1 -> {
@@ -145,9 +146,9 @@ public class MiscCommands {
                             future.set(ReactionOperations.create(m, 30, op, embeds.keySet().toArray(new String[0])));
                         });
                     });
-                    return true;
+                    return Operation.COMPLETED;
                 }
-                return false;
+                return Operation.IGNORED;
             });
             future.set(ReactionOperations.create(m, 30, op, embeds.keySet().toArray(new String[0])));
         }
@@ -185,7 +186,7 @@ public class MiscCommands {
                 .addField("RAM", (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() >> 20) + " MB/" + (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() >> 20) + " MB")
                 .addField("Threads", ManagementFactory.getThreadMXBean().getThreadCount())
                 .addField("CPU Cores", Runtime.getRuntime().availableProcessors())
-                .addField("CPU Usage", AsyncInfoMonitor.getCpuUsage())
+                .addField("CPU Usage", String.format("%.04f%%", AsyncInfoMonitor.getCpuUsage()))
                 .addField("JDA Version", JDAInfo.VERSION)
                 .addField("API Responses", Arrays.stream(GabrielBot.getInstance().getShards()).mapToLong(s -> s.getJDA().getResponseTotal()).sum());
         pb.addEmptyLine().addLabel("General")

@@ -38,7 +38,7 @@ dependencies {
 
     compile 'net.jodah:expiringmap:0.5.8'
 
-    compile 'org.luaj:luaj-jse:3.0-beta2'
+    compile 'org.luaj:luaj-jse:3.0.1'
 }
 
 shadowJar {
