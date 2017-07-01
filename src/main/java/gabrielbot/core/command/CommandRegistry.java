@@ -59,8 +59,8 @@ public class CommandRegistry {
                 List<String> list = new ArrayList<>();
                 String[] nameArgs = cmd.nameArgs();
                 String s = name.substring(cmd.name().length());
-                for(int i = 0; i < nameArgs.length; i++) {
-                    Matcher m = Regex.pattern("^" + nameArgs[i]).matcher(s);
+                for(String argRegex : nameArgs) {
+                    Matcher m = Regex.pattern("^" + argRegex).matcher(s);
                     if(!m.find()) {
                         continue looking;
                     }
@@ -183,70 +183,3 @@ public class CommandRegistry {
         return commands;
     }
 }
-
-/**
- *
- * package commandsystem;
-
- import java.lang.reflect.Method;
- import java.lang.reflect.Modifier;
- import java.util.ArrayList;
- import java.util.Collections;
- import java.util.HashMap;
- import java.util.List;
- import java.util.Map;
- import java.util.regex.Matcher;
- import java.util.regex.Pattern;
-
- public class CommandRegistry {
- private final Map<String, CommandReference> map = new HashMap<>();
- private final ClassLoader loader;
-
- public CommandRegistry(ClassLoader loader) {
- this.loader = loader == null ? ClassLoader.getSystemClassLoader() : loader;
- }
-
- public void register(Class<?> cls) {
- for(Method m : cls.getMethods()) {
- if(!Modifier.isStatic(m.getModifiers())) continue;
- Command command = m.getAnnotation(Command.class);
- if(command == null) continue;
- map.put(command.name() + command.nameArgs().length, new CommandReference(command, m, loader));
- }
- }
-
- public void process(String cmdName, Map<String, Object> args) {
- CommandReference ref = map.get(cmdName);
- if(ref == null) {
- looking: for(Map.Entry<String, CommandReference> entry : map.entrySet()) {
- CommandReference r = entry.getValue();
- Command cmd = r.command;
- if(!cmdName.startsWith(cmd.name())) continue;
- if(cmd.name().length() > cmdName.length()) continue;
- List<String> list = new ArrayList<>();
- String[] nameArgs = cmd.nameArgs();
- String s = cmdName.substring(cmd.name().length());
- for(int i = 0; i < nameArgs.length; i++) {
- Matcher m = Pattern.compile("^" + nameArgs[i], Pattern.CASE_INSENSITIVE|Pattern.MULTILINE).matcher(s);
- if(!m.find()) {
- continue looking;
- }
- String arg = m.group();
- s = s.substring(arg.length());
- list.add(arg);
- }
- if(s.length() > 0) continue;
- ref = r;
- int i = 1;
- for(String arg : list) {
- args.put("namearg-" + (i++), arg);
- }
- args.put("nameargs", Collections.unmodifiableList(list));
- }
- if(ref == null) return;
- }
- ref.invoker.invoke(args);
- }
- }
-
- */

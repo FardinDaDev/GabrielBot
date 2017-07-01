@@ -52,9 +52,9 @@ public class GabrielBot {
     private final Shard[] shards;
 
     private GabrielBot() throws Throwable {
-        GabrielData.blacklist().runNoReply((j)->{
-            LOGGER.info("Successfully established connection to database");
-        }, (t)->{
+        GabrielData.blacklist().runNoReply((j)->
+            LOGGER.info("Successfully established connection to database")
+        , (t)->{
             LOGGER.warn("Unable to connect to the database");
             LOGGER.info("Attempting to start database...");
             File dbstart = new File("dbstart.bat");
@@ -66,9 +66,9 @@ public class GabrielBot {
             try {
                 Runtime.getRuntime().exec(dbstart.getAbsolutePath()).waitFor();
                 Thread.sleep(5000);
-                GabrielData.blacklist().runNoReply((j)->{
-                    LOGGER.info("Successfully established connection to database");
-                }, (e)->{
+                GabrielData.blacklist().runNoReply((j)->
+                    LOGGER.info("Successfully established connection to database")
+                , (e)->{
                     LOGGER.error("DB not started, exiting", e);
                     System.exit(-1);
                 });

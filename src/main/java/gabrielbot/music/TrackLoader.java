@@ -57,9 +57,8 @@ public class TrackLoader implements AudioLoadResultHandler {
 
             if(!event.getGuild().getSelfMember().hasPermission(event.getChannel(), Permission.MESSAGE_ADD_REACTION)) {
                 event.getChannel().sendMessage(builder.build()).queue();
-                IntConsumer consumer = (c) -> {
+                IntConsumer consumer = (c) ->
                     trackLoaded(playlist.getTracks().get(c - 1), event.getAuthor(), false);
-                };
 
                 DiscordUtils.selectInt(event, 5, consumer);
                 return;

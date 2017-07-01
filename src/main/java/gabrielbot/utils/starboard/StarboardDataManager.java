@@ -49,9 +49,9 @@ public class StarboardDataManager extends JedisDataManager {
     }
 
     public void remove(long guildId, long starboardMessageId) {
-        runNoReply(j->{
-            j.lrem(prefix + guildId, 0, String.valueOf(starboardMessageId));
-        });
+        runNoReply(j->
+            j.lrem(prefix + guildId, 0, String.valueOf(starboardMessageId))
+        );
     }
 
     public void remove(Message starboardMessage) {

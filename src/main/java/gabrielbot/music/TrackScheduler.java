@@ -93,9 +93,9 @@ public class TrackScheduler extends AudioEventAdapter {
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
         deletePlayingMessage();
-        guildMusicPlayer.textChannel.sendMessage("Now playing " + track.getInfo().title).queue(m->{
-            playingMessageId = m.getIdLong();
-        });
+        guildMusicPlayer.textChannel.sendMessage("Now playing " + track.getInfo().title).queue(m->
+            playingMessageId = m.getIdLong()
+        );
     }
 
     @Override

@@ -63,7 +63,7 @@ public class DiscordUtils {
     }
 
     public static <T> T selectListSync(GuildMessageReceivedEvent event, List<T> list, Function<T, String> toString, Function<String, MessageEmbed> toEmbed) {
-        CompletableFuture<T> future = new CompletableFuture<T>();
+        CompletableFuture<T> future = new CompletableFuture<>();
         Object notify = new Object();
 
         if (!selectList(event, list, toString, toEmbed, (value) -> {

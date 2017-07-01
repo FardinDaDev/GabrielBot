@@ -66,9 +66,7 @@ public class Interpreter implements Runnable, Callable<Object>, Supplier<Object>
 		if((this.stackDepth = other.stackDepth + 1) > MAX_STACK_SIZE) {
 			throw new StackOverflowError("User code");
 		}
-		for(int i = 0; i < impl.length; i++) {
-			impl[i] = other.impl[i];
-		}
+		System.arraycopy(other.impl, 0, impl, 0, impl.length);
 		this.contantPool.addAll(other.contantPool);
 		for(int i = 0; i < args.length; i++) {
 			this.locals.put(i, args[i]);

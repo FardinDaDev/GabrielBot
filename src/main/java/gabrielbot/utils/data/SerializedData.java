@@ -71,8 +71,8 @@ public class SerializedData<T> {
     }
 
     public void save() {
-        data.asMap().forEach((key, value)->{
-            value.ifPresent(v->set.accept(key, Base64.getEncoder().encodeToString(serialize(kryoPool, v))));
-        });
+        data.asMap().forEach((key, value)->
+            value.ifPresent(v->set.accept(key, Base64.getEncoder().encodeToString(serialize(kryoPool, v))))
+        );
     }
 }

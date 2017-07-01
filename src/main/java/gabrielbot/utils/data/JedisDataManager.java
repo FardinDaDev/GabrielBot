@@ -138,7 +138,7 @@ public class JedisDataManager extends AbstractMap<String, String> {
 
                         @Override
                         public int size() {
-                            return run(j->{return j.keys("*").size();});
+                            return run(j->j.keys("*").size());
                         }
                     };
                 }
