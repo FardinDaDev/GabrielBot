@@ -3,9 +3,9 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
-        <file>logs/gabriel.log</file>
+        <file>logs/gabrielbot.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/gabriel.%d{yyyyMMdd}.log</fileNamePattern>
+            <fileNamePattern>logs/gabrielbot.%d{yyyyMMdd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -22,7 +22,7 @@
         </encoder>
     </appender>
 
-    <appender name="DISCORD" class="br.net.brjdevs.natan.gabrielbot.log.DiscordLogBack"/>
+    <appender name="DISCORD" class="gabrielbot.log.DiscordLogBack"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
