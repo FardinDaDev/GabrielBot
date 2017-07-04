@@ -12,13 +12,15 @@ import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.utils.PermissionUtil;
 
-import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class PruneCommand {
+    private static final Consumer<Throwable> IGNORE = t->{};
+
     @Command(
             name = "prune",
             description = "Prunes up to 1000 messages",
@@ -31,7 +33,7 @@ public class PruneCommand {
             permission = CommandPermission.ADMIN,
             category = CommandCategory.MODERATION
     )
-    public static void register(@Argument("this") CommandReference thiz, @Argument("event")GuildMessageReceivedEvent event, @Argument("args") String[] args, @Argument("guild") Guild guild, @Argument("channel")TextChannel channel) {
+    public static void prune(@Argument("this") CommandReference thiz, @Argument("event")GuildMessageReceivedEvent event, @Argument("args") String[] args, @Argument("guild") Guild guild, @Argument("channel")TextChannel channel) {
         if (!PermissionUtil.checkPermission(channel, guild.getSelfMember(), Permission.MESSAGE_MANAGE)) {
             channel.sendMessage("I need the Manage Messages permission").queue();
             return;
@@ -83,24 +85,29 @@ public class PruneCommand {
             filter = m -> true;
         }
 
-        int deleted = 0;
-        OffsetDateTime twoWeeksAgo = OffsetDateTime.now().minusWeeks(2).minusSeconds(20);
-        while (messages > 0) {
-            List<Message> toDelete = channel.getHistory().retrievePast(Math.min(100, messages)).complete()
-                    .stream().filter(m -> m.getCreationTime().isAfter(twoWeeksAgo) && filter.test(m)).collect(Collectors.toList());
-            deleted += toDelete.size();
-            switch (toDelete.size()) {
-                case 0:
-                    continue;
-                case 1:
-                    toDelete.get(0).delete().queue();
-                    break;
-                default:
-                    channel.deleteMessages(toDelete).queue();
-                    break;
+
+        List<Message> toDelete = new ArrayList<>();
+        for(Message message : channel.getIterableHistory().limit(100)) {
+            if(filter.test(message)) {
+                toDelete.add(message);
             }
-            messages -= 100;
+            if(--messages == 0) break;
         }
+        int deleted = toDelete.size();
+
+        while(toDelete.size() > 100) {
+            channel.deleteMessages(toDelete.subList(0, 99)).queue(null, IGNORE);
+            toDelete = toDelete.subList(100, toDelete.size()-1);
+        }
+        switch(toDelete.size()) {
+            case 0: break;
+            case 1:
+                channel.deleteMessageById(toDelete.get(0).getIdLong()).queue(null, IGNORE);
+                break;
+            default:
+                channel.deleteMessages(toDelete).queue(null, IGNORE);
+        }
+
         channel.sendMessage("Successfully deleted " + deleted + " messages").queue();
     }
 }

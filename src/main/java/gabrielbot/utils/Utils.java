@@ -1,7 +1,5 @@
 package gabrielbot.utils;
 
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,16 +17,15 @@ public class Utils {
 
     public static String paste(String toSend) {
         try {
-            String pasteToken = Unirest.post("https://hastebin.com/documents")
+            String pasteToken = HTTPRequester.DEFAULT.newRequest("https://hastebin.com/documents")
                     .header("User-Agent", "Gabriel")
                     .header("Content-Type", "text/plain")
                     .body(toSend)
-                    .asJson()
-                    .getBody()
-                    .getObject()
+                    .post()
+                    .asObject()
                     .getString("key");
             return "https://hastebin.com/" + pasteToken;
-        } catch (UnirestException e) {
+        } catch (Exception e) {
             LOGGER.warn("Hastebin is being stupid, huh? Can't send or retrieve paste.", e);
             return "Gabriel threw ``" + e.getCause().getClass().getSimpleName() + "``" + " while trying to upload paste, check logs";
         }

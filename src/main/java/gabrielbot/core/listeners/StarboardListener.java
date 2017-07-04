@@ -35,11 +35,8 @@ public class StarboardListener implements EventListener {
             if(!reaction.equals(STAR_1)) return;
             long id = event.getMessageIdLong();
             Message m = event.getChannel().getMessageById(id).complete();
-            if(!GabrielBot.DEBUG && event.getUser().getIdLong() == m.getAuthor().getIdLong()) return;
             GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
             if(data == null || data.starboardChannelId == 0) return;
-            if(data.maxStarboardMessageAgeMillis != 0 && m.getCreationTime().toInstant().getEpochSecond() < (System.currentTimeMillis()-data.maxStarboardMessageAgeMillis)/1000) return;
-            if(m.getChannel().getIdLong() == data.starboardChannelId) return;
             TextChannel tc = event.getGuild().getTextChannelById(data.starboardChannelId);
             if(tc == null || !tc.canTalk()) {
                 if (event.getTextChannel().canTalk()) {
@@ -48,14 +45,24 @@ public class StarboardListener implements EventListener {
                 data.starboardChannelId = 0;
                 return;
             }
-            TLongSet blacklist = data.starboardBlacklist;
-            if(blacklist != null && blacklist.contains(event.getUser().getIdLong())) return;
-            int minStars = data.minStars;
-            int stars = event.getReaction().getCount();
-            if(stars > 0 && stars < minStars) return;
-            long author = m.getAuthor().getIdLong();
-            if(event.getReaction().getUsers().stream().filter(u->!u.isBot() && u.getIdLong() != author).count() != minStars) {
-                return;
+            TLongSet blacklist;
+            int minStars;
+            if(!GabrielBot.DEBUG) {
+                if(event.getUser().getIdLong() == m.getAuthor().getIdLong()) return;
+                if(data.maxStarboardMessageAgeMillis != 0 && m.getCreationTime().toInstant().getEpochSecond() < (System.currentTimeMillis()-data.maxStarboardMessageAgeMillis)/1000) return;
+                if(m.getChannel().getIdLong() == data.starboardChannelId) return;
+                blacklist = data.starboardBlacklist;
+                if(blacklist != null && blacklist.contains(event.getUser().getIdLong())) return;
+                minStars = data.minStars;
+                int stars = event.getReaction().getCount();
+                if(stars > 0 && stars < minStars) return;
+                long author = m.getAuthor().getIdLong();
+                if(event.getReaction().getUsers().stream().filter(u->!u.isBot() && u.getIdLong() != author).count() != minStars) {
+                    return;
+                }
+            } else {
+                blacklist = new TLongHashSet();
+                minStars = 1;
             }
             StarboardDataManager sdm = GabrielData.starboards();
             if(sdm.getStarboardMessage(m) != 0) return;

@@ -1,7 +1,5 @@
 package gabrielbot.core.jda;
 
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
 import gabrielbot.GabrielBot;
 import gabrielbot.core.data.GabrielData;
@@ -12,6 +10,7 @@ import gabrielbot.core.listeners.operations.InteractiveOperations;
 import gabrielbot.core.listeners.operations.ReactionOperations;
 import gabrielbot.music.GuildMusicPlayer;
 import gabrielbot.music.MusicListener;
+import gabrielbot.utils.HTTPRequester;
 import gnu.trove.impl.sync.TSynchronizedLongObjectMap;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
@@ -28,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Shard {
+    private static final HTTPRequester REQUESTER = new HTTPRequester("Shard Count Updater");
+
     private final Logger logger;
     private final EventManager eventManager;
     private final JDABuilder builder;
@@ -85,12 +86,12 @@ public class Shard {
             String token = GabrielData.config().dbotsToken;
             if(token == null || token.isEmpty()) break dbots;
             try {
-                Unirest.post("https://discordbots.org/api/bots/" + jda.getSelfUser().getId() + "/stats")
+               REQUESTER.newRequest("https://discordbots.org/api/bots/" + jda.getSelfUser().getId() + "/stats")
                         .header("Authorization", token)
                         .header("Content-Type", "application/json")
                         .body(payload)
-                        .asJson();
-            } catch(UnirestException e) {
+                        .post();
+            } catch(Exception e) {
                 logger.error("Error posting stats to discordbots.org", e.getCause());
             }
         }
@@ -99,12 +100,12 @@ public class Shard {
             String token = GabrielData.config().botsPwToken;
             if(token == null || token.isEmpty()) break botspw;
             try {
-                Unirest.post("https://bots.discord.pw/api/bots/" + jda.getSelfUser().getId() + "/stats")
+                REQUESTER.newRequest("https://bots.discord.pw/api/bots/" + jda.getSelfUser().getId() + "/stats")
                         .header("Authorization", token)
                         .header("Content-Type", "application/json")
                         .body(payload)
-                        .asJson();
-            } catch(UnirestException e) {
+                        .post();;
+            } catch(Exception e) {
                 logger.error("Error posting stats to bots.discord.pw", e.getCause());
             }
         }

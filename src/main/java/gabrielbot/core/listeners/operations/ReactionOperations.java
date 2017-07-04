@@ -10,7 +10,6 @@ import net.dv8tion.jda.core.hooks.EventListener;
 import net.jodah.expiringmap.ExpiringMap;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,19 +23,19 @@ public final class ReactionOperations {
             .variableExpiration()
             .build();
 
-    public static Future<Void> get(Message message) {
+    public static OperationFuture get(Message message) {
         if(!message.getAuthor().equals(message.getJDA().getSelfUser())) throw new IllegalArgumentException("Must provide a message sent by the bot");
         return get(message.getIdLong());
     }
 
-    public static Future<Void> get(long messageId) {
+    public static OperationFuture get(long messageId) {
         RunningOperation o = OPERATIONS.get(messageId);
         return o == null ? null : o.future;
     }
 
-    public static Future<Void> createOrGet(Message message, long timeoutSeconds, ReactionOperation operation, String... defaultReactions) {
+    public static OperationFuture createOrGet(Message message, long timeoutSeconds, ReactionOperation operation, String... defaultReactions) {
         if(!message.getAuthor().equals(message.getJDA().getSelfUser())) throw new IllegalArgumentException("Must provide a message sent by the bot");
-        Future<Void> f = createOrGet(message.getIdLong(), timeoutSeconds, operation);
+        OperationFuture f = createOrGet(message.getIdLong(), timeoutSeconds, operation);
         if(defaultReactions.length > 0) {
             AtomicInteger index = new AtomicInteger();
             AtomicReference<Consumer<Void>> c = new AtomicReference<>();
@@ -53,19 +52,19 @@ public final class ReactionOperations {
         return f;
     }
 
-    public static Future<Void> createOrGet(long messageId, long timeoutSeconds, ReactionOperation operation) {
+    public static OperationFuture createOrGet(long messageId, long timeoutSeconds, ReactionOperation operation) {
         if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
         if(operation == null) throw new NullPointerException("operation");
         RunningOperation o = OPERATIONS.get(messageId);
         if(o != null) return o.future;
-        o = new RunningOperation(operation, new OperationFuture(messageId));
+        o = new RunningOperation(operation, new OperationFuture(messageId, operation));
         OPERATIONS.put(messageId, o, timeoutSeconds, TimeUnit.SECONDS);
         return o.future;
     }
 
-    public static Future<Void> create(Message message, long timeoutSeconds, ReactionOperation operation, String... defaultReactions) {
+    public static OperationFuture create(Message message, long timeoutSeconds, ReactionOperation operation, String... defaultReactions) {
         if(!message.getAuthor().equals(message.getJDA().getSelfUser())) throw new IllegalArgumentException("Must provide a message sent by the bot");
-        Future<Void> f = create(message.getIdLong(), timeoutSeconds, operation);
+        OperationFuture f = create(message.getIdLong(), timeoutSeconds, operation);
         if(defaultReactions.length > 0) {
             AtomicInteger index = new AtomicInteger();
             AtomicReference<Consumer<Void>> c = new AtomicReference<>();
@@ -82,12 +81,12 @@ public final class ReactionOperations {
         return f;
     }
 
-    public static Future<Void> create(long messageId, long timeoutSeconds, ReactionOperation operation) {
+    public static OperationFuture create(long messageId, long timeoutSeconds, ReactionOperation operation) {
         if(timeoutSeconds < 1) throw new IllegalArgumentException("Timeout < 1");
         if(operation == null) throw new NullPointerException("operation");
         RunningOperation o = OPERATIONS.get(messageId);
         if(o != null) return null;
-        o = new RunningOperation(operation, new OperationFuture(messageId));
+        o = new RunningOperation(operation, new OperationFuture(messageId, operation));
         OPERATIONS.put(messageId, o, timeoutSeconds, TimeUnit.SECONDS);
         return o.future;
     }
@@ -161,11 +160,13 @@ public final class ReactionOperations {
         }
     }
 
-    private static class OperationFuture extends CompletableFuture<Void> {
+    public static class OperationFuture extends CompletableFuture<Void> {
         private final long id;
+        public final ReactionOperation operation;
 
-        OperationFuture(long id) {
+        OperationFuture(long id, ReactionOperation operation) {
             this.id = id;
+            this.operation = operation;
         }
 
         @Override

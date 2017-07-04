@@ -1,13 +1,14 @@
 package gabrielbot.utils.commands;
 
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import gabrielbot.utils.HTTPRequester;
 import org.json.JSONObject;
 
 public class Jokes {
+    private static final HTTPRequester REQUESTER = new HTTPRequester("Jokes");
+
     public static String getJoke(String user) {
         try {
-            JSONObject object = Unirest.get("http://api.icndb.com/jokes/random").asJson().getBody().getObject();
+            JSONObject object = REQUESTER.newRequest("http://api.icndb.com/jokes/random").get().asObject();
 
             if (!"success".equals(object.getString("type"))) {
                 throw new RuntimeException("Couldn't gather joke ;|");
@@ -16,7 +17,7 @@ public class Jokes {
             String joke = object.getJSONObject("value").getString("joke").replace("&quot;", "\"");
             if (user == null || user.equals("Chuck Norris")) return joke;
             return joke.replace("Chuck Norris", user);
-        } catch (UnirestException ex) {
+        } catch (Exception ex) {
             return "Unable to get joke :(";
         }
     }

@@ -2,7 +2,7 @@ package gabrielbot.utils.pokeapi;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.mashape.unirest.http.Unirest;
+import gabrielbot.utils.HTTPRequester;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.util.Optional;
 
 public class PokeAPI {
+    private static final HTTPRequester REQUESTER = new HTTPRequester("PokeAPI");
+
     private final LoadingCache<String, Optional<Pokemon>> pokemonCache;
 
     public PokeAPI(File storageDir) {
@@ -29,11 +31,11 @@ public class PokeAPI {
                         fis.close();
                         return Optional.of(p);
                     }
-                    return Optional.ofNullable(fromJSONObject(f, Unirest.get("http://pokeapi.co/api/v2/pokemon/" + k)
+                    return Optional.ofNullable(fromJSONObject(f, REQUESTER.newRequest("http://pokeapi.co/api/v2/pokemon/" + k)
                             .header("User-Agent", "Gabriel (Discord bot)")
-                            .asJson()
-                            .getBody()
-                            .getObject()));
+                            .get()
+                            .asObject()
+                    ));
                 });
     }
 

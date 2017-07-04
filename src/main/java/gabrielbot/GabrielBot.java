@@ -1,6 +1,5 @@
 package gabrielbot;
 
-import com.mashape.unirest.http.Unirest;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
@@ -14,6 +13,7 @@ import gabrielbot.music.GuildMusicPlayer;
 import gabrielbot.music.SerializedPlayer;
 import gabrielbot.music.SerializedTrack;
 import gabrielbot.music.Track;
+import gabrielbot.utils.HTTPRequester;
 import gabrielbot.utils.KryoUtils;
 import gabrielbot.utils.data.JedisDataManager;
 import gabrielbot.utils.pokeapi.PokeAPI;
@@ -310,11 +310,12 @@ public class GabrielBot {
     private static int getRecommendedShards(Config config) {
         if (DEBUG) return 2;
         try {
-            return Unirest.get("https://discordapp.com/api/gateway/bot")
+            return HTTPRequester.DEFAULT.newRequest("https://discordapp.com/api/gateway/bot")
                     .header("Authorization", "Bot " + config.token)
                     .header("Content-Type", "application/json")
-                    .asJson()
-                    .getBody().getObject().getInt("shards");
+                    .get()
+                    .asObject()
+                    .getInt("shards");
         } catch (Exception e) {
             e.printStackTrace();
         }

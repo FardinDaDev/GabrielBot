@@ -1,6 +1,5 @@
 package gabrielbot.utils;
 
-import com.mashape.unirest.http.Unirest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -8,6 +7,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 public class DBots {
+    private static final HTTPRequester REQUESTER = new HTTPRequester("Discord Bots");
+
     public static BotInfo[] byName(String name) {
         try {
             return query("username," + URLEncoder.encode(name, "UTF-8"));
@@ -34,10 +35,9 @@ public class DBots {
 
     public static BotInfo[] query(String search) {
         try {
-            JSONArray res = Unirest.get("https://discordbots.org/api/bots?search=" + search)
-                    .asJson()
-                    .getBody()
-                    .getObject()
+            JSONArray res = REQUESTER.newRequest("https://discordbots.org/api/bots?search=" + search)
+                    .get()
+                    .asObject()
                     .getJSONArray("results");
             BotInfo[] bots = new BotInfo[res.length()];
             for(int i = 0; i < bots.length; i++) {

@@ -8,15 +8,19 @@ import gabrielbot.core.command.CommandCategory;
 import gabrielbot.core.command.CommandPermission;
 import gabrielbot.core.command.CommandReference;
 import gabrielbot.core.data.GabrielData;
+import gabrielbot.utils.Utils;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class OptionsCommand {
@@ -78,16 +82,32 @@ public class OptionsCommand {
             if (data != null) data.starboardChannelId = 0;
             event.getChannel().sendMessage("Starboard disabled").queue();
         });
-        registerOption("starboard:channel", (event, args) -> {
+        registerOption("starboard:check", (event, args) -> {
             GabrielData.GuildData data = GabrielData.guilds().get().get(event.getGuild().getId());
             if (data != null && data.starboardChannelId != 0) {
                 TextChannel tc = event.getGuild().getTextChannelById(data.starboardChannelId);
-                if (tc == null || !tc.canTalk()) {
+                if(tc == null || !tc.canTalk()) {
                     event.getChannel().sendMessage("Invalid channel configured for starboard: either the configured one was deleted, or I cannot speak in it, so I will be resetting the configuration").queue();
                     data.starboardChannelId = 0;
                     return;
                 }
-                event.getChannel().sendMessage("Starboard channel is set to " + tc.getAsMention()).queue();
+                if(data.starboardBlacklist == null) data.starboardBlacklist = new TLongHashSet();
+                EmbedBuilder eb = new EmbedBuilder();
+                eb.addField("Channel", "Starboard channel is set to " + tc.getAsMention(), true);
+                eb.addField("Minimum stars", "" + data.minStars, true);
+                eb.addBlankField(true);
+                eb.addField("Maximum message age", data.maxStarboardMessageAgeMillis == 0 ? "No max age set" : (data.maxStarboardMessageAgeMillis/1000) + " second(s)", false);
+                String blacklist;
+                if(data.starboardBlacklist.isEmpty()) {
+                    blacklist = "No one is blacklisted :D";
+                } else {
+                    blacklist = Arrays.stream(data.starboardBlacklist.toArray()).mapToObj(id->"<@" + id + ">").collect(Collectors.joining(", "));
+                    if(blacklist.length() > 1024) {
+                        blacklist = Utils.paste(Arrays.stream(data.starboardBlacklist.toArray()).mapToObj(id->event.getGuild().getMemberById(id)).filter(Objects::nonNull).map(m->String.format("%#s", m)).collect(Collectors.joining(", ")));
+                    }
+                }
+                eb.addField("Blacklist", blacklist, false);
+                event.getChannel().sendMessage(eb.build()).queue();
                 return;
             }
             event.getChannel().sendMessage("No configured starboard channel").queue();
@@ -209,11 +229,12 @@ public class OptionsCommand {
                     "`>>opts starboard blacklist add <@mention>`: Blacklists mentioned user from adding messages to the starboard\n" +
                     "`>>opts starboard blacklist remove <@mention>`: Removes the mentioned user from the starboard blacklist\n" +
                     "`>>opts starboard maxage <seconds>`: Messages older than the specified time won't be added to the starboard\n" +
+                    "`>>opts starboard check`: Check starboard configuration\n" +
                     "`>>opts payrespects toggle`: Toggles the 'You have paid your respects' message",
             permission = CommandPermission.ADMIN,
             category = CommandCategory.MODERATION
     )
-    public static void register(@Argument("this") CommandReference thiz, @Argument("event")GuildMessageReceivedEvent event, @Argument("args") String[] args) {
+    public static void opts(@Argument("this") CommandReference thiz, @Argument("event")GuildMessageReceivedEvent event, @Argument("args") String[] args) {
         if (args.length < 2) {
             thiz.onHelp(event);
             return;

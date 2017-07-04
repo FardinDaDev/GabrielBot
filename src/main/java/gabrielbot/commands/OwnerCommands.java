@@ -19,12 +19,9 @@ import gabrielbot.utils.Utils;
 import gabrielbot.utils.data.JedisDataManager;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
-import net.dv8tion.jda.core.entities.MessageReaction;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
-import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
-import net.dv8tion.jda.core.events.message.react.MessageReactionRemoveEvent;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -158,7 +155,8 @@ public class OwnerCommands {
             GabrielBot.getInstance().registry.commands().remove("play");
             JedisDataManager jdm = GabrielData.guilds();
             int[] i = new int[1];
-            GabrielBot.getInstance().getPlayers().forEachValue(p -> {
+            GabrielBot.getInstance().getPlayers().forEachValue(p->{
+                if(p == null) return true;
                 if(p.scheduler.currentTrack() == null) {
                     p.leave();
                     return true;
@@ -187,16 +185,15 @@ public class OwnerCommands {
             name = "forcestar",
             description = "Forces addition or removal of stars in a starboard message",
             usage = "`>>forcestar add <id> <amount>`\n" +
-                    "`>>forcestar remove <id> <amount>`\n" +
-                    "`>>forcestar addevent <id>`\n" +
-                    "`>>forcestar removeevent <id>`\n",
+                    "`>>forcestar remove <id> <amount>`",
             permission = CommandPermission.OWNER,
             category = CommandCategory.OWNER
     )
     public static void forcestar(@Argument("author") User user, @Argument("channel") TextChannel channel, @Argument("args") String[] args) {
         GabrielBot.getInstance().log("Running forcestar with " + Arrays.toString(args));
         long messageId = Long.parseLong(args[1]);
-        StarboardListener.StarOperation operation = (StarboardListener.StarOperation)ReactionOperations.get(messageId);
+        ReactionOperations.OperationFuture future = ReactionOperations.get(messageId);
+        StarboardListener.StarOperation operation = future == null ? null : (StarboardListener.StarOperation)future.operation;
         switch(args[0]) {
             case "add":
                 operation.reactions.addAndGet(Integer.parseInt(args[2]));
@@ -206,14 +203,6 @@ public class OwnerCommands {
                 operation.reactions.addAndGet(-Integer.parseInt(args[2]));
                 operation.update();
                 break;
-            case "addevent": {
-                FakeReactionAddEvent event = new FakeReactionAddEvent(user, new MessageReaction(channel, new MessageReaction.ReactionEmote("\u2b50", null, user.getJDA()), messageId, false, -1));
-                GabrielBot.getInstance().getShard(channel.getGuild().getIdLong()).getEventManager().handle(event);
-            } break;
-            case "removeevent": {
-                FakeReactionRemoveEvent event = new FakeReactionRemoveEvent(user, new MessageReaction(channel, new MessageReaction.ReactionEmote("\u2b50", null, user.getJDA()), messageId, false, -1));
-                GabrielBot.getInstance().getShard(channel.getGuild().getIdLong()).getEventManager().handle(event);
-            } break;
             default: throw new IllegalArgumentException("Unknown option " + args[0]);
         }
     }
@@ -406,18 +395,6 @@ public class OwnerCommands {
     private static class DummyClassLoader extends ClassLoader {
         DummyClassLoader(ClassLoader parent) {
             super(parent);
-        }
-    }
-
-    private static class FakeReactionAddEvent extends MessageReactionAddEvent {
-        FakeReactionAddEvent(User user, MessageReaction reaction) {
-            super(null, 0, user, reaction);
-        }
-    }
-
-    private static class FakeReactionRemoveEvent extends MessageReactionRemoveEvent {
-        FakeReactionRemoveEvent(User user, MessageReaction reaction) {
-            super(null, 0, user, reaction);
         }
     }
 }

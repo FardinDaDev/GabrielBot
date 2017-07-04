@@ -1,13 +1,12 @@
 package gabrielbot.commands;
 
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import gabrielbot.GabrielBot;
 import gabrielbot.core.command.Argument;
 import gabrielbot.core.command.Command;
 import gabrielbot.core.command.CommandCategory;
 import gabrielbot.core.command.CommandPermission;
 import gabrielbot.core.data.GabrielData;
+import gabrielbot.utils.HTTPRequester;
 import gabrielbot.utils.cache.URLCache;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
@@ -20,7 +19,8 @@ import java.io.File;
 
 @SuppressWarnings("unused")
 public class ImageCommands {
-    private static final URLCache cache = new URLCache(new File(".urlcache"), 10);
+    private static final HTTPRequester REQUESTER = new HTTPRequester("Image Commands");
+    private static final URLCache CACHE = new URLCache(new File(".urlcache"), 10);
     private static final String BASEURL = "http://catgirls.brussell98.tk/api/random";
     private static final String NSFWURL = "http://catgirls.brussell98.tk/api/nsfw/random";
 
@@ -44,17 +44,16 @@ public class ImageCommands {
                     }
                 }
             }
-            JSONObject obj = Unirest.get(nsfw ? NSFWURL : BASEURL)
-                    .asJson()
-                    .getBody()
-                    .getObject();
+            JSONObject obj = REQUESTER.newRequest(nsfw ? NSFWURL : BASEURL)
+                    .get()
+                    .asObject();
             if (!obj.has("url")) {
                 channel.sendMessage("Unable to find image").queue();
             } else {
                 checkVerification(event);
-               channel.sendFile(cache.input(obj.getString("url")), "catgirls.png", null).queue();
+               channel.sendFile(CACHE.input(obj.getString("url")), "catgirls.png", null).queue();
             }
-        } catch (UnirestException e) {
+        } catch (Exception e) {
             GabrielBot.LOGGER.error(null, e);
             channel.sendMessage("Unable to find image").queue();
         }

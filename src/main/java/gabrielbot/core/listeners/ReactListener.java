@@ -44,7 +44,9 @@ public class ReactListener implements EventListener {
     }
 
     private static boolean ayaya(long id) {
-        return all(id) || id == 214393232342122506L; //Aya Komichi#7541
+        return all(id) ||
+                id == 214393232342122506L || //Aya Komichi#7541
+                id == 280158289667555328L; //AugvstxD#1793
     }
 
     private static boolean all(long id) {

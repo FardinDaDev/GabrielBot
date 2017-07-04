@@ -35,7 +35,7 @@ public class FunCommands {
 
     @Command(
             name = "roll",
-            nameArgs = {"(\\d{1,5})?"},
+            nameArgs = {"(\\d+)?"},
             description = "Rolls a dice",
             usage = "`>>roll`: Rolls a 6-sided dice once\n" +
                     "`>>roll <times>`: Rolls a 6-sided dice\n" +
@@ -48,7 +48,14 @@ public class FunCommands {
             category = CommandCategory.MISC
     )
     public static void roll(@Argument("channel") TextChannel channel, @Argument("namearg-1") String size, @Argument("args") String[] args) {
-        int sides = size == null ? 6 : Integer.parseInt(size); //Argument is already validated
+        int sides; {
+            try {
+                sides = size == null ? 6 : Integer.parseInt(size);
+            } catch(NumberFormatException e) {
+                channel.sendMessage("Not a valid number: `" + size + "`").queue();
+                return;
+            }
+        }
         int times;
         if(args.length == 0) {
             times = 1;

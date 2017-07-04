@@ -1,7 +1,6 @@
 package gabrielbot.utils;
 
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import gabrielbot.GabrielBot;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -11,14 +10,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class OpenTriviaDatabase {
+    private static final HTTPRequester REQUESTER = new HTTPRequester("Trivia");
     private volatile static String token;
 
-    public static void resetToken() throws UnirestException {
-        token = Unirest.get("https://opentdb.com/api_token.php?command=request")
-                .asJson()
-                .getBody()
-                .getObject()
-                .getString("token");
+    public static void resetToken() {
+        try {
+            token = REQUESTER.newRequest("https://opentdb.com/api_token.php?command=request")
+                    .get()
+                    .asObject()
+                    .getString("token");
+        } catch(HTTPRequester.RequestingException e) {
+            GabrielBot.LOGGER.error("Error getting OpenTriviaDatabase token", e);
+        }
     }
 
     public static Question random() {
@@ -37,10 +40,9 @@ public class OpenTriviaDatabase {
 
     public static Question[] query(String query) {
         try {
-            JSONObject obj = Unirest.get("https://opentdb.com/api.php?" + query + "&encode=base64&token=" + token)
-                    .asJson()
-                    .getBody()
-                    .getObject();
+            JSONObject obj = REQUESTER.newRequest("https://opentdb.com/api.php?" + query + "&encode=base64&token=" + token)
+                    .get()
+                    .asObject();
             int responseCode = obj.getInt("response_code");
             switch(responseCode) {
                 case 1:
@@ -65,7 +67,7 @@ public class OpenTriviaDatabase {
                 );
             }
             return ret;
-        } catch(UnirestException e) {
+        } catch(Exception e) {
             return new Question[0];
         }
     }

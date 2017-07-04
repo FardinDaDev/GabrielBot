@@ -1,7 +1,7 @@
 package gabrielbot.utils.cache;
 
 import com.google.common.base.Preconditions;
-import com.mashape.unirest.http.Unirest;
+import gabrielbot.utils.HTTPRequester;
 import gabrielbot.utils.Utils;
 
 import java.io.File;
@@ -11,6 +11,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 
 public class URLCache extends FileCache {
+    private static final HTTPRequester REQUESTER = new HTTPRequester("URL Cache");
+
     private final File dir;
 
     public URLCache(File dir, long maxSize) {
@@ -43,7 +45,7 @@ public class URLCache extends FileCache {
             if(f.exists()) return f.getAbsolutePath();
             try {
                 f.createNewFile();
-                try(InputStream is = Unirest.get(url).asBinary().getRawBody();
+                try(InputStream is = REQUESTER.newRequest(url).get().asStream();
                     FileOutputStream fos = new FileOutputStream(f)) {
                     Utils.copyData(is, fos);
                 }
