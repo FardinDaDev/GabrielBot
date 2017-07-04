@@ -1,5 +1,6 @@
 package gabrielbot.utils;
 
+import gabrielbot.utils.http.HTTPRequester;
 import org.json.JSONArray;
 import org.json.JSONObject;
 

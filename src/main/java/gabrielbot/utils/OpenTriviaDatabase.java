@@ -1,6 +1,8 @@
 package gabrielbot.utils;
 
 import gabrielbot.GabrielBot;
+import gabrielbot.utils.http.HTTPRequester;
+import gabrielbot.utils.http.RequestingException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -19,7 +21,7 @@ public class OpenTriviaDatabase {
                     .get()
                     .asObject()
                     .getString("token");
-        } catch(HTTPRequester.RequestingException e) {
+        } catch(RequestingException e) {
             GabrielBot.LOGGER.error("Error getting OpenTriviaDatabase token", e);
         }
     }

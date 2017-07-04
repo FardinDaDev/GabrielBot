@@ -2,7 +2,7 @@ package gabrielbot.utils.pokeapi;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import gabrielbot.utils.HTTPRequester;
+import gabrielbot.utils.http.HTTPRequester;
 import org.json.JSONException;
 import org.json.JSONObject;
 

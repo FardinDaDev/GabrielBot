@@ -39,6 +39,7 @@ dependencies {
     compile 'net.jodah:expiringmap:0.5.8'
 
     compile 'org.luaj:luaj-jse:3.0.1'
+    compile 'com.squareup.okhttp3:okhttp:3.8.1'
 }
 
 shadowJar {

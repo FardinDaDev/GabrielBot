@@ -78,6 +78,7 @@ public class OwnerCommands {
         addImport("gabrielbot.utils.cache.*");
         addImport("gabrielbot.utils.commands.*");
         addImport("gabrielbot.utils.data.*");
+        addImport("gabrielbot.utils.http.*");
         addImport("gabrielbot.utils.lua.*");
         addImport("gabrielbot.utils.pokeapi.*");
         addImport("gabrielbot.utils.starboard.*");

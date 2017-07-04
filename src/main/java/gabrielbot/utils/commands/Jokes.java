@@ -1,6 +1,6 @@
 package gabrielbot.utils.commands;
 
-import gabrielbot.utils.HTTPRequester;
+import gabrielbot.utils.http.HTTPRequester;
 import org.json.JSONObject;
 
 public class Jokes {

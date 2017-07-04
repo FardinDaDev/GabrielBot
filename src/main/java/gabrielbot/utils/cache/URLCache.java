@@ -1,8 +1,8 @@
 package gabrielbot.utils.cache;
 
 import com.google.common.base.Preconditions;
-import gabrielbot.utils.HTTPRequester;
 import gabrielbot.utils.Utils;
+import gabrielbot.utils.http.HTTPRequester;
 
 import java.io.File;
 import java.io.FileOutputStream;

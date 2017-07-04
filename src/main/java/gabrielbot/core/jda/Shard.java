@@ -10,7 +10,7 @@ import gabrielbot.core.listeners.operations.InteractiveOperations;
 import gabrielbot.core.listeners.operations.ReactionOperations;
 import gabrielbot.music.GuildMusicPlayer;
 import gabrielbot.music.MusicListener;
-import gabrielbot.utils.HTTPRequester;
+import gabrielbot.utils.http.HTTPRequester;
 import gnu.trove.impl.sync.TSynchronizedLongObjectMap;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;

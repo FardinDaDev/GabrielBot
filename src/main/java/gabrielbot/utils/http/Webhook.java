@@ -1,5 +1,6 @@
-package gabrielbot.utils;
+package gabrielbot.utils.http;
 
+import gabrielbot.utils.RateLimiter;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageEmbed;
@@ -32,17 +33,17 @@ public class Webhook {
         return this;
     }
 
-    public HTTPRequester.Response rawPost(JSONObject message) throws HTTPRequester.RequestingException {
+    public Response rawPost(JSONObject message) throws RequestingException {
         if(avatarUrl != null) message.put("avatar_url", avatarUrl);
         if(username != null) message.put("username", username);
         return REQUESTER.post(id, token, message);
     }
 
-    public HTTPRequester.Response post(Message message) throws HTTPRequester.RequestingException {
+    public Response post(Message message) throws RequestingException {
         return rawPost(((MessageImpl)message).toJSONObject());
     }
 
-    public HTTPRequester.Response post(MessageEmbed... embeds) throws HTTPRequester.RequestingException {
+    public Response post(MessageEmbed... embeds) throws RequestingException {
         JSONObject object = new JSONObject();
         JSONArray array = new JSONArray();
         for(MessageEmbed embed : embeds) {
@@ -52,11 +53,11 @@ public class Webhook {
         return rawPost(object);
     }
 
-    public HTTPRequester.Response post(String message, boolean tts) throws HTTPRequester.RequestingException {
+    public Response post(String message, boolean tts) throws RequestingException {
         return post(new MessageBuilder().append(message).setTTS(tts).build());
     }
 
-    public HTTPRequester.Response post(String message) throws HTTPRequester.RequestingException {
+    public Response post(String message) throws RequestingException {
         return post(new MessageBuilder().append(message).build());
     }
 
@@ -66,7 +67,6 @@ public class Webhook {
         }
 
         Response post(String id, String token, JSONObject message) throws RequestingException {
-            System.out.println(message);
             return newRequest(String.format(API_ENDPOINT, id, token), id).body(message).header("Content-Type", "application/json").post();
         }
     }
