@@ -25,9 +25,10 @@ public class Config {
     public final boolean nas;
     public final long[] owners;
     public final Map<String, DBInfo> dbs;
-    public final long console;
+    public final String consoleWebhookId;
+    public final String consoleWebhookToken;
 
-    private Config(String prefix, String token, String dbotsToken, String botsPwToken, String musicDisableReason, boolean music, boolean nas, long[] owners, Map<String, DBInfo> dbs, long console) {
+    private Config(String prefix, String token, String dbotsToken, String botsPwToken, String musicDisableReason, boolean music, boolean nas, long[] owners, Map<String, DBInfo> dbs, String consoleWebhookId, String consoleWebhookToken) {
         this.prefix = prefix;
         this.token = token;
         this.dbotsToken = dbotsToken;
@@ -37,7 +38,8 @@ public class Config {
         this.nas = nas;
         this.owners = owners;
         this.dbs = dbs;
-        this.console = console;
+        this.consoleWebhookId = consoleWebhookId;
+        this.consoleWebhookToken = consoleWebhookToken;
     }
 
     public static Config load(File from) throws IOException {
@@ -105,8 +107,9 @@ public class Config {
                 dbs.put(name, new DBInfo(db.getString("host"), db.getInt("port")));
             }
         }
-        long console = obj.getLong("console");
-        return new Config(prefix, token, dbotsToken, botsPwToken, musicDisableReason, music, nas, owners, dbs, console);
+        String webhookId = obj.getString("consoleWebhookId");
+        String webhookToken = obj.getString("consoleWebhookToken");
+        return new Config(prefix, token, dbotsToken, botsPwToken, musicDisableReason, music, nas, owners, dbs, webhookId, webhookToken);
     }
 
     public static class DBInfo {

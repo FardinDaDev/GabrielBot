@@ -9,35 +9,27 @@ import gabrielbot.utils.Utils;
 public class DiscordLogBack extends AppenderBase<ILoggingEvent> {
     private static boolean enabled = false;
 
-    public static void disable() {
-        enabled = false;
-    }
-
     public static void enable() {
         enabled = true;
     }
 
     private PatternLayout patternLayout;
-    private ILoggingEvent previousEvent;
 
     @Override
     protected void append(ILoggingEvent event) {
-        if (!enabled) return;
-        //if (!event.getLevel().isGreaterOrEqual(Level.INFO)) return;
+        if(!enabled) return;
         String toSend = patternLayout.doLayout(event);
-        if (previousEvent != null && event.getMessage().equals(previousEvent.getMessage())) return;
-        if (toSend.contains("INFO") && toSend.contains("RemoteNodeProcessor")) return;
-        if (toSend.length() > 1920)
+        if(toSend.contains("INFO") && toSend.contains("RemoteNodeProcessor")) return;
+        if(toSend.length() > 1920)
             toSend = ":warning: Received a message but it was too long, Hastebin: " + Utils.paste(toSend);
         GabrielBot.getInstance().log(toSend);
-        previousEvent = event;
     }
 
     @Override
     public void start() {
         patternLayout = new PatternLayout();
         patternLayout.setContext(getContext());
-        patternLayout.setPattern("```\n[%d{HH:mm:ss}] [%t/%level] [%logger{0}]: %msg```");
+        patternLayout.setPattern("[%d{HH:mm:ss}] [%t/%level] [%logger{0}]: %msg");
         patternLayout.start();
 
         super.start();

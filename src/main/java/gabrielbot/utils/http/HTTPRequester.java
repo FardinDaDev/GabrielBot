@@ -4,11 +4,12 @@ import gabrielbot.utils.RateLimiter;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import org.apache.commons.io.IOUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Consumer;
+import java.util.Objects;
+import java.util.function.Function;
 
 public class HTTPRequester {
     public static final OkHttpClient PARENT = new OkHttpClient();
@@ -26,10 +27,13 @@ public class HTTPRequester {
         this(identifier, rateLimiter, null);
     }
 
-    public HTTPRequester(String identifier, RateLimiter rateLimiter, Consumer<OkHttpClient.Builder> configurator) {
+    public HTTPRequester(String identifier, RateLimiter rateLimiter, Function<OkHttpClient.Builder, OkHttpClient> configurator) {
         OkHttpClient.Builder builder = PARENT.newBuilder();
-        if(configurator != null) configurator.accept(builder);
-        this.client = builder.build();
+        if(configurator != null) {
+            this.client = Objects.requireNonNull(configurator.apply(builder), "Client");
+        } else {
+            this.client = builder.build();
+        }
         this.identifier = identifier;
         this.rateLimiter = rateLimiter;
     }
@@ -98,12 +102,20 @@ public class HTTPRequester {
     protected Response execute(okhttp3.Request.Builder builder) throws IOException {
         okhttp3.Response res = client.newCall(builder.build()).execute();
         ResponseBody body = res.body();
-        return new Response(fromBody(body), res.code(), res.headers().toMultimap());
+        Response r = new Response(fromBody(body), res.code(), res.headers().toMultimap());
+        res.close();
+        return r;
     }
 
     private static byte[] fromBody(ResponseBody body) throws IOException {
         if(body == null) return new byte[0];
         InputStream is = body.byteStream();
-        return IOUtils.readFully(is, is.available());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int r;
+        while((r = is.read(buffer)) != -1) {
+            baos.write(buffer, 0, r);
+        }
+        return baos.toByteArray();
     }
 }

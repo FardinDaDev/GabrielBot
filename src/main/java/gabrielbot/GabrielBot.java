@@ -16,15 +16,20 @@ import gabrielbot.music.Track;
 import gabrielbot.utils.KryoUtils;
 import gabrielbot.utils.data.JedisDataManager;
 import gabrielbot.utils.http.HTTPRequester;
+import gabrielbot.utils.http.RequestingException;
+import gabrielbot.utils.http.Response;
+import gabrielbot.utils.http.Webhook;
 import gabrielbot.utils.pokeapi.PokeAPI;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.SelfUser;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.utils.SimpleLog;
+import org.json.JSONObject;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.slf4j.Logger;
@@ -44,14 +49,16 @@ public class GabrielBot {
     public static final Logger LOGGER = LoggerFactory.getLogger(GabrielBot.class);
 
     private static GabrielBot instance;
-    private static boolean loaded = false;
 
     public final CommandRegistry registry;
     public final AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
     public final PokeAPI pokeapi = new PokeAPI(new File(".pokemon"));
     private final Shard[] shards;
+    private Webhook console;
 
     private GabrielBot() throws Throwable {
+        instance = this;
+
         GabrielData.blacklist().runNoReply((j)->
             LOGGER.info("Successfully established connection to database")
         , (t)->{
@@ -108,12 +115,32 @@ public class GabrielBot {
 
         Config config = GabrielData.config();
 
+        Webhook c = new Webhook(config.consoleWebhookId, config.consoleWebhookToken);
+
+        try {
+            c.post("```\nStarting Gabriel" + (DEBUG ? "Dev" : "Bot") + "...```");
+        } catch(Exception e) {
+            e.printStackTrace();
+            c = new Webhook(null, null) {
+                @Override
+                public Response rawPost(JSONObject message) throws RequestingException {
+                    return null;
+                }
+            };
+        }
+
+        console = c;
+        DiscordLogBack.enable();
+
         shards = new Shard[getRecommendedShards(config)];
         for(int i = 0; i < shards.length; i++) {
-            if(i != 0) Thread.sleep(5000);
             shards[i] = new Shard(config.token, i, shards.length, config.nas);
+            if(i == 0) {
+                SelfUser self = shards[0].getJDA().getSelfUser();
+                console.setUsername(self.getName());
+                console.setAvatarUrl(self.getEffectiveAvatarUrl());
+            }
         }
-        DiscordLogBack.enable();
         playerManager.setItemLoaderThreadPoolSize(10);
 
         for(Shard s : shards) {
@@ -121,8 +148,6 @@ public class GabrielBot {
         }
 
         LOGGER.info("Loading done!");
-
-        loaded = true;
     }
 
     private void trackSetup() {
@@ -145,10 +170,6 @@ public class GabrielBot {
             gmp.scheduler.fromSerialized(playing, unserialized);
             gmp.textChannel.sendMessage("Successfully resumed music").queue();
         });
-    }
-
-    public static boolean isLoaded() {
-        return loaded;
     }
 
     public Shard[] getShards() {
@@ -247,13 +268,22 @@ public class GabrielBot {
         return streamGuilds().collect(Collectors.toList());
     }
 
+    public Webhook getConsole() {
+        return console;
+    }
+
     public void log(String s) {
-        System.out.println(s);
-        TextChannel tc = getTextChannelById(GabrielData.config().console);
-        if(tc == null) {
-            return;
+        try {
+            console.post("```\n" + s + "```");
+        } catch(RequestingException e) {
+            e.printStackTrace();
+            console = new Webhook(null, null) {
+                @Override
+                public Response rawPost(JSONObject message) throws RequestingException {
+                    return null;
+                }
+            };
         }
-        tc.sendMessage(s).queue();
     }
 
     public static void main(String... args) throws Throwable {
@@ -268,12 +298,12 @@ public class GabrielBot {
                 Logger l = LoggerFactory.getLogger(log.name);
                 switch(logLevel) {
                     case TRACE:
-                        if (l.isTraceEnabled()) {
+                        if(l.isTraceEnabled()) {
                             l.trace(message.toString());
                         }
                         break;
                     case DEBUG:
-                        if (l.isDebugEnabled()) {
+                        if(l.isDebugEnabled()) {
                             l.debug(message.toString());
                         }
                         break;
@@ -295,7 +325,7 @@ public class GabrielBot {
             }
         });
         try {
-            instance = new GabrielBot();
+            new GabrielBot();
             instance.trackSetup();
         } catch(Throwable t) {
             LOGGER.error("Error during startup", t);

@@ -7,6 +7,7 @@ import gabrielbot.core.command.CommandCategory;
 import gabrielbot.core.command.CommandPermission;
 import gabrielbot.core.command.CommandReference;
 import gabrielbot.core.data.GabrielData;
+import gabrielbot.core.jda.EventManagerThread;
 import gabrielbot.core.listeners.StarboardListener;
 import gabrielbot.core.listeners.operations.ReactionOperations;
 import gabrielbot.music.SerializedPlayer;
@@ -294,7 +295,7 @@ public class OwnerCommands {
             thiz.onHelp(event);
             return;
         }
-        Thread thread = new Thread(() -> {
+        Thread thread = EventManagerThread.current().newThread(() -> {
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             String input = String.join(" ", args);
             String code = imports +
@@ -389,7 +390,6 @@ public class OwnerCommands {
             }
         }, "EvalThread");
         thread.setPriority(Thread.MAX_PRIORITY);
-        thread.setDaemon(true);
         thread.start();
     }
 

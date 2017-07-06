@@ -34,8 +34,8 @@ public class Webhook {
     }
 
     public Response rawPost(JSONObject message) throws RequestingException {
-        if(avatarUrl != null) message.put("avatar_url", avatarUrl);
-        if(username != null) message.put("username", username);
+        if(avatarUrl != null && !message.has("avatar_url")) message.put("avatar_url", avatarUrl);
+        if(username != null && !message.has("username")) message.put("username", username);
         return REQUESTER.post(id, token, message);
     }
 
@@ -66,7 +66,7 @@ public class Webhook {
             super("WebhookRequester", new RateLimiter(5, 5000));
         }
 
-        Response post(String id, String token, JSONObject message) throws RequestingException {
+        public Response post(String id, String token, JSONObject message) throws RequestingException {
             return newRequest(String.format(API_ENDPOINT, id, token), id).body(message).header("Content-Type", "application/json").post();
         }
     }

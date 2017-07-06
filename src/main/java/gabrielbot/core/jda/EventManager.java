@@ -1,9 +1,7 @@
 package gabrielbot.core.jda;
 
 import br.com.brjdevs.highhacks.eventbus.ASMEventBus;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
-import gabrielbot.GabrielBot;
 import net.dv8tion.jda.core.events.Event;
 import net.dv8tion.jda.core.hooks.IEventManager;
 
@@ -14,7 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class EventManager implements IEventManager {
+public class EventManager implements IEventManager, Thread.UncaughtExceptionHandler {
     private final List<Object> listeners = new CopyOnWriteArrayList<>();
     private final ASMEventBus eventBus = new ASMEventBus(EventManager.class.getClassLoader(), true);
     private final ExecutorService executor;
@@ -26,11 +24,8 @@ public class EventManager implements IEventManager {
     public EventManager(int shardId) {
         AtomicInteger number = new AtomicInteger();
         executor = Executors.newCachedThreadPool(r -> {
-            Thread t = new Thread(r,
-                    MoreObjects.toStringHelper("EventManagerThread")
-                            .add("shard", shardId)
-                            .add("thread", number.incrementAndGet())
-                            .toString());
+            Thread t = new EventManagerThread(r, shardId, number.incrementAndGet());
+            t.setUncaughtExceptionHandler(EventManager.this);
             t.setDaemon(true);
             t.setPriority(Thread.MIN_PRIORITY);
             return t;
@@ -51,7 +46,6 @@ public class EventManager implements IEventManager {
 
     @Override
     public void handle(Event event) {
-        if(!GabrielBot.isLoaded()) return;
         executor.submit(()->handleSync(event));
     }
 
@@ -60,7 +54,14 @@ public class EventManager implements IEventManager {
         return Collections.unmodifiableList(listeners);
     }
 
-    public void handleSync(Event event) {
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        Thread.currentThread().setName("Exception Handler");
+        eventBus.post(new HandlerExceptionEvent(t, e));
+    }
+
+    public void handleSync(Object event) {
+        Thread.currentThread().setName(event.getClass().getSimpleName() + " Handler");
         eventBus.post(event);
     }
 }
