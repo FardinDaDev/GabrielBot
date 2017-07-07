@@ -93,7 +93,7 @@ public class Webhook {
                 int remaining = Integer.parseInt(res.headers().get("x-ratelimit-remaining").get(0));
                 if(remaining == limit-1) {
                     long time = (Long.parseLong(res.headers().get("x-ratelimit-reset").get(0))- OffsetDateTime.now().toEpochSecond())/10;
-                    setRateLimiter(new RateLimiter(remaining, (int)(time)));
+                    setRateLimiter(new RateLimiter(remaining, (int)(time*1000)));
                     configured = true;
                 }
             }
