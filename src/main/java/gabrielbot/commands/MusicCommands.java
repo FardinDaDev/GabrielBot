@@ -159,7 +159,7 @@ public class MusicCommands {
             return;
         }
         Track current = gmp.scheduler.currentTrack();
-        if(current.dj == event.getAuthor().getIdLong() || isDJ(event.getMember())) {
+        if(isDJ(event.getMember(), current)) {
             gmp.textChannel.sendMessage("The DJ has decided to skip").queue();
             gmp.scheduler.nextTrack();
             return;
@@ -181,7 +181,7 @@ public class MusicCommands {
             channel.sendMessage("I'm not playing any song").queue();
             return;
         }
-        boolean dj = isDJ(event.getMember());
+        boolean dj = isDJ(event.getMember(), gmp.scheduler.currentTrack());
         if(dj) {
             gmp.textChannel.sendMessage("The DJ decided to stop").queue();
             GabrielBot.getInstance().interruptPlayer(gmp.guildId);
@@ -215,8 +215,8 @@ public class MusicCommands {
         return true;
     }
 
-    private static boolean isDJ(Member member) {
-        return CommandPermission.ADMIN.test(member) || member.getRoles().stream().anyMatch(r -> r.getName().equals("DJ"));
+    private static boolean isDJ(Member member, Track track) {
+        return CommandPermission.ADMIN.test(member) || member.getRoles().stream().anyMatch(r -> r.getName().equals("DJ")) || (track != null && track.dj == member.getUser().getIdLong());
     }
 
     private static boolean checkVC(GuildMessageReceivedEvent event) {

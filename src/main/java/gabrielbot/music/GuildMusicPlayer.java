@@ -96,7 +96,6 @@ public class GuildMusicPlayer implements AudioSendHandler {
         player.setPaused(true);
         textChannel.sendMessage("I'll leave the voice channel in 2 minutes because" + reason.reason).queue();
         leaveTask = LEAVE_EXECUTOR.schedule(this::leaveTask, 2, TimeUnit.MINUTES);
-        if(leaveTask == null) throw new IllegalStateException("leaveTask is null");
     }
 
     public boolean isLeaveScheduled() {

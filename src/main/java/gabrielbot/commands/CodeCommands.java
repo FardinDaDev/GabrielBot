@@ -5,6 +5,7 @@ import gabrielbot.core.command.Command;
 import gabrielbot.core.command.CommandCategory;
 import gabrielbot.core.command.CommandPermission;
 import gabrielbot.core.command.CommandReference;
+import gabrielbot.core.jda.EventManagerThread;
 import gabrielbot.utils.Utils;
 import gabrielbot.utils.brainfuck.BrainfuckInterpreter;
 import gabrielbot.utils.lua.InstructionLimitException;
@@ -59,7 +60,7 @@ public class CodeCommands {
         String code = String.join(" ", args).trim();
         StringBuilder sb = new StringBuilder();
         Globals globals = LuaHelper.setup(event, 10000, 1, "", sb);
-        Thread thread = new Thread(() -> {
+        Thread thread = EventManagerThread.current().newThread(() -> {
             try {
                 LuaFunction tostring = globals.get("tostring").checkfunction();
                 LuaValue v = globals.load(code).call();

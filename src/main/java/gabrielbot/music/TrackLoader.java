@@ -12,6 +12,7 @@ import gabrielbot.utils.Utils;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,9 @@ public class TrackLoader implements AudioLoadResultHandler {
     @Override
     public void playlistLoaded(AudioPlaylist playlist) {
         if (playlist.isSearchResult()) {
-            EmbedBuilder builder = new EmbedBuilder().setColor(Color.CYAN).setTitle("Song selection. Type the song number to continue.")
+            boolean canReact = event.getGuild().getSelfMember().hasPermission(event.getChannel(), Permission.MESSAGE_ADD_REACTION);
+
+            EmbedBuilder builder = new EmbedBuilder().setColor(Color.CYAN).setTitle("Song selection. " + (canReact ? "React with " : "Type ") + "the song number to continue.")
                     .setFooter("This timeouts in 10 seconds.", null);
             java.util.List<AudioTrack> tracks = playlist.getTracks();
             StringBuilder b = new StringBuilder();
@@ -55,7 +58,7 @@ public class TrackLoader implements AudioLoadResultHandler {
             }
             builder.setDescription(b.toString());
 
-            if(!event.getGuild().getSelfMember().hasPermission(event.getChannel(), Permission.MESSAGE_ADD_REACTION)) {
+            if(!canReact) {
                 event.getChannel().sendMessage(builder.build()).queue();
                 IntConsumer consumer = (c) ->
                     trackLoaded(playlist.getTracks().get(c - 1), event.getAuthor(), false);
@@ -104,7 +107,16 @@ public class TrackLoader implements AudioLoadResultHandler {
 
     public void trackLoaded(AudioTrack track, User user, boolean silent) {
         if(event.getGuild().getSelfMember().getVoiceState().getChannel() == null) {
-            event.getGuild().getAudioManager().openAudioConnection(event.getMember().getVoiceState().getChannel());
+            VoiceChannel vc = event.getMember().getVoiceState().getChannel();
+            if(vc == null) {
+                event.getChannel().sendMessage("Please rejoin the voice channel and try again").queue();
+                return;
+            }
+            if(!event.getGuild().getSelfMember().hasPermission(vc, Permission.VOICE_CONNECT, Permission.VOICE_SPEAK)) {
+                event.getChannel().sendMessage("Please give me permission to connect and speak in the voice channel").queue();
+                return;
+            }
+            event.getGuild().getAudioManager().openAudioConnection(vc);
         }
         guildMusicPlayer.scheduler.queueTrack(track, user);
         if(!silent) {

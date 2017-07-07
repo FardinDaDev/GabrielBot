@@ -1,12 +1,12 @@
 package gabrielbot.commands.game;
 
+import gabrielbot.utils.Randoms;
 import gabrielbot.utils.data.JarTextFileDataManager;
 import gnu.trove.set.TLongSet;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.TextChannel;
 
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class Pokemon extends Guess {
     private static final List<String> options = new JarTextFileDataManager("/assets/pokemon.txt").get();
@@ -16,7 +16,7 @@ public class Pokemon extends Guess {
     }
 
     private static String setup(TextChannel channel) {
-        String s = options.get(ThreadLocalRandom.current().nextInt(options.size()));
+        String s = options.get(Randoms.nextInt(options.size()));
         String[] parts = s.split("`");
         String url = parts[0];
 

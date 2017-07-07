@@ -6,6 +6,7 @@ import gabrielbot.core.command.Command;
 import gabrielbot.core.command.CommandCategory;
 import gabrielbot.core.command.CommandPermission;
 import gabrielbot.core.command.CommandReference;
+import gabrielbot.core.jda.EventManagerThread;
 import gabrielbot.core.listeners.operations.Operation;
 import gabrielbot.core.listeners.operations.ReactionOperation;
 import gabrielbot.core.listeners.operations.ReactionOperations;
@@ -199,6 +200,9 @@ public class MiscCommands {
                 .addField("Received Messages", MessageStats.getMessages())
                 .addField("Executed Commands", MessageStats.getCommands())
                 .addField("Shards (C/T)", connectedShards + "/" + totalShards);
+        if(totalShards != 1) {
+            pb.addField("Current Shard", (EventManagerThread.current().getShardId()+1) + "/" + totalShards);
+        }
         pb.addEmptyLine().addLabel("Music")
                 .addField("Connections", players)
                 .addField("Queue Size", queueSize);

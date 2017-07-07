@@ -6,6 +6,7 @@ import gabrielbot.core.command.Argument;
 import gabrielbot.core.command.Command;
 import gabrielbot.core.command.CommandCategory;
 import gabrielbot.core.command.CommandPermission;
+import gabrielbot.core.jda.EventManagerThread;
 import gabrielbot.core.listeners.operations.InteractiveOperations;
 import gabrielbot.utils.OpenTriviaDatabase;
 import gnu.trove.set.TLongSet;
@@ -32,14 +33,14 @@ public class GameCommands {
         }
         TLongSet players = new TLongHashSet();
         players.add(author.getIdLong());
-        new Thread(()->{
+        EventManagerThread.current().newThread(()->{
             try {
                 Thread.sleep(100);
             } catch(InterruptedException e) {
                 return;
             }
             InteractiveOperations.create(channel.getIdLong(), 120, new Trivia(channel, players, q));
-        }).start();
+        }, "Game Starter").start();
     }
 
     @Command(
@@ -55,14 +56,14 @@ public class GameCommands {
         TLongSet players = new TLongHashSet();
         players.add(author.getIdLong());
         for(User u : message.getMentionedUsers()) players.add(u.getIdLong());
-        new Thread(()->{
+        EventManagerThread.current().newThread(()->{
             try {
                 Thread.sleep(100);
             } catch(InterruptedException e) {
                 return;
             }
             InteractiveOperations.create(channel.getIdLong(), 120, new Pokemon(channel, players));
-        }).start();
+        }, "Game Starter").start();
     }
 
     private static boolean check(TextChannel channel) {

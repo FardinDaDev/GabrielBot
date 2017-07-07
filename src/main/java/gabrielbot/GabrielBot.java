@@ -2,7 +2,12 @@ package gabrielbot;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+import com.sedmelluq.discord.lavaplayer.source.bandcamp.BandcampAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.beam.BeamAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import gabrielbot.core.command.CommandRegistry;
 import gabrielbot.core.data.Config;
 import gabrielbot.core.data.GabrielData;
@@ -85,7 +90,12 @@ public class GabrielBot {
             }
         });
 
-        AudioSourceManagers.registerRemoteSources(playerManager);
+        playerManager.registerSourceManager(new YoutubeAudioSourceManager(true));
+        playerManager.registerSourceManager(new SoundCloudAudioSourceManager());
+        playerManager.registerSourceManager(new BandcampAudioSourceManager());
+        playerManager.registerSourceManager(new VimeoAudioSourceManager());
+        playerManager.registerSourceManager(new TwitchStreamAudioSourceManager());
+        playerManager.registerSourceManager(new BeamAudioSourceManager());
 
         Reflections r = new Reflections("gabrielbot.commands", new SubTypesScanner(false));
 
@@ -110,6 +120,30 @@ public class GabrielBot {
         }, "DataSaverThread");
         dataSaver.setDaemon(true);
         dataSaver.start();
+
+        Thread playerCleanup = new Thread(()->{
+            Logger logger = LoggerFactory.getLogger("PlayerCleanup");
+            while(true) {
+                try {
+                    Thread.sleep(1_800_000); //30 minutes
+                } catch(InterruptedException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                int[] cleared = {0};
+                getPlayers().valueCollection().stream().filter(p->p.scheduler.currentTrack()==null).forEach(p->{
+                    removePlayer(p.guildId);
+                    cleared[0]++;
+                });
+                if(cleared[0] == 0) {
+                    logger.info("No players cleared up");
+                } else {
+                    logger.info("Cleaned up " + cleared[0] + " players");
+                }
+            }
+        }, "PlayerCleanupThread");
+        playerCleanup.setDaemon(true);
+        playerCleanup.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(GabrielData::save, "ShutdownHookSaverThread"));
 
@@ -325,8 +359,7 @@ public class GabrielBot {
             }
         });
         try {
-            new GabrielBot();
-            instance.trackSetup();
+            new GabrielBot().trackSetup();
         } catch(Throwable t) {
             LOGGER.error("Error during startup", t);
             System.exit(-1);
@@ -338,15 +371,15 @@ public class GabrielBot {
     }
 
     private static int getRecommendedShards(Config config) {
-        if (DEBUG) return 2;
+        if(DEBUG) return 2;
         try {
             return HTTPRequester.DEFAULT.newRequest("https://discordapp.com/api/gateway/bot")
                     .header("Authorization", "Bot " + config.token)
                     .header("Content-Type", "application/json")
                     .get()
                     .asObject()
-                    .getInt("shards");
-        } catch (Exception e) {
+                    .getInt("shards")*2;
+        } catch(Exception e) {
             e.printStackTrace();
         }
         return 1;

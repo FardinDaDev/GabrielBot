@@ -1,11 +1,11 @@
 package gabrielbot.commands.custom;
 
+import gabrielbot.utils.Randoms;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -93,7 +93,7 @@ public class TextCustomCommand extends CustomCommand {
                 }
                 if(inString) opt.append(c);
             }
-            str.append(options.get(ThreadLocalRandom.current().nextInt(options.size())));
+            str.append(options.get(Randoms.nextInt(options.size())));
             idx = s.indexOf("$random(", idx);
         }
         return str.toString();

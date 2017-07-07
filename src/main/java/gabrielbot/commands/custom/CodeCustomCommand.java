@@ -8,6 +8,7 @@ import gabrielbot.lang.runtime.Interpreter;
 import gabrielbot.lang.runtime.Verifier;
 import gabrielbot.lang.runtime.invoke.Method;
 import gabrielbot.lang.runtime.opcodes.InvokeStaticImpl;
+import gabrielbot.utils.Randoms;
 import gabrielbot.utils.StringUtils;
 import gabrielbot.utils.UnsafeUtils;
 import gabrielbot.utils.brainfuck.BrainfuckInterpreter;
@@ -17,7 +18,6 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -123,7 +123,7 @@ public class CodeCustomCommand extends CustomCommand {
                     i2 = i1 ^ i2;
                     i1 = i1 ^ i2;
                 }
-                return ThreadLocalRandom.current().nextInt(i1) + i2;
+                return Randoms.nextInt(i1) + i2;
             }
 
             @Override
@@ -140,7 +140,7 @@ public class CodeCustomCommand extends CustomCommand {
             @Override
             public Object run(Interpreter interpreter, Object instance, Object... args) {
                 Array a = (Array) args[0];
-                return a.getAtIndex(ThreadLocalRandom.current().nextInt() % a.size()); //gets an existing index for sparse arrays
+                return a.getAtIndex(Randoms.nextInt(a.size())); //gets an existing index for sparse arrays
             }
 
             @Override

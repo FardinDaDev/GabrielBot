@@ -29,10 +29,7 @@ public class ReactListener implements EventListener {
             }
 
             if(all(id)) {
-                if(contentLower.equals("ion") || rawContent.equals("<@251260900252712962>") || rawContent.equals("<@!251260900252712962>")) {
-                    message.addReaction(EmoteReference.ION.getUnicode()).queue();
-                }
-                if(contentLower.equals("cute") || rawContent.equals("<@132584525296435200>") || rawContent.equals("<@!132584525296435200>")) {
+                if(rawContent.equals("<@132584525296435200>") || rawContent.equals("<@!132584525296435200>")) {
                     message.addReaction(EmoteReference.LARS.getUnicode()).queue();
                 }
             }

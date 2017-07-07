@@ -1,5 +1,6 @@
 package gabrielbot.utils.lua;
 
+import gabrielbot.utils.Randoms;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
@@ -27,7 +28,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.LongStream;
 
 public class LuaHelper {
@@ -125,7 +125,7 @@ public class LuaHelper {
         globals.set("random", new VarArgFunction() {
             @Override
             public Varargs onInvoke(Varargs args) {
-                return args.arg(ThreadLocalRandom.current().nextInt(args.narg())+1);
+                return args.arg(Randoms.nextInt(args.narg())+1);
             }
         });
 

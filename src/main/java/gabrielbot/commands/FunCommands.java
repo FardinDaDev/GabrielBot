@@ -5,6 +5,7 @@ import gabrielbot.core.command.Command;
 import gabrielbot.core.command.CommandCategory;
 import gabrielbot.core.command.CommandPermission;
 import gabrielbot.core.command.CommandReference;
+import gabrielbot.utils.Randoms;
 import gabrielbot.utils.Utils;
 import gabrielbot.utils.commands.EmoteReference;
 import gabrielbot.utils.commands.Jokes;
@@ -16,7 +17,6 @@ import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 @SuppressWarnings("unused")
 public class FunCommands {
@@ -67,7 +67,10 @@ public class FunCommands {
                 return;
             }
         }
-        long total = ThreadLocalRandom.current().longs().limit(times).map(l->Math.abs(l%sides)).sum();
+        int total = Randoms.ints().limit(times).map(i->{
+            i = (i % sides) + 1;
+            return (i ^ (i >> 31)) + (i >>> 31); //abs
+        }).sum();
         channel.sendMessage(times == 1 ? "You rolled a " + total : "You rolled a total of " + total + " with " + times + " rolls").queue();
     }
 
